@@ -38,7 +38,7 @@ python3 setup.py develop
 + [./train_color_meta.py](./train_color_meta.py): Training code for color transfer with Meta OT
 + [./train_color_single.py](./train_color_single.py): Our re-implementation of [W2GN](https://arxiv.org/abs/1909.13082) for color transfer
 + [./eval_discrete.py](./eval_discrete.py): Evaluation and analysis for discrete OT
-+ [./eval_color.py](./eval_color.py): Evaluation and analysis forcolor transfer
++ [./eval_color.py](./eval_color.py): Evaluation and analysis for color transfer
 + [./plot_mnist.py](./plot_mnist.py): Further plotting for the MNIST experiment
 + [./plot_world_pair.py](./plot_world_pair.py): Further plotting for the spherical transport experiment
 + [./create_video_mnist.py](./create_video_mnist.py): Create the MNIST transport video
