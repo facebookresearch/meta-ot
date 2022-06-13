@@ -1,0 +1,44 @@
+# Copyright (c) Meta Platforms, Inc. and affiliates.
+#
+# defaults:
+  # - hydra/launcher: submitit_slurm
+
+seed: 0
+
+data: paintings
+meta_batch_size: 8
+inner_batch_size: 1024
+cycle_loss_weight: 3.
+
+pretrain_lr: 5e-4
+lr: 1e-3
+l2_penalty: 1e-6
+max_grad_norm: 1.
+num_rgb_sample: 10000
+
+num_inner_iter: 1
+num_warmup_iter: 0
+num_inner_iter_warmup: 5
+
+num_train_iter: 2E5
+max_num_pretrain_iter: 20001
+pretrain_loss_threshold: 1e-4
+
+meta_icnn:
+  _target_: meta_ot.models.MetaICNN
+  bottleneck_size: 512
+  fc_num_hidden_units: 512
+  fc_num_hidden_layers: 1
+
+hydra:
+  run:
+    dir: ./exp/local/${now:%Y.%m.%d}/color_transfer_meta_${now:%H%M}
+  # sweep:
+  #   dir: ./exp/${now:%Y.%m.%d}/${now:%H%M}_${experiment}
+  #   subdir: ${hydra.job.num}
+  # launcher:
+  #   max_num_timeout: 100000
+  #   timeout_min: 4319
+  #   partition: scavenge
+  #   mem_gb: 64
+  #   gpus_per_node: 1

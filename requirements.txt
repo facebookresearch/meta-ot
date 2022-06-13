@@ -1,0 +1,2 @@
+ott-jax==0.2.6
+hydra-core>=1.1.0

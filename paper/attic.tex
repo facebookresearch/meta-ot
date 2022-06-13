@@ -1,0 +1,227 @@
+% Copyright (c) Meta Platforms, Inc. and affiliates.
+
+\section{Preliminaries and background}
+The 2-Wasserstein \citep{villani2009optimal} between
+two measures $\mu$ and $\nu$ living in a metric space $(M, d_M)$ is
+\begin{equation}
+  \label{eq:W2}
+  W_2^2(\mu, \nu)\defeq \inf_{\gamma\in\Gamma(\mu,\nu)} f(\gamma; \mu, \nu),
+\end{equation}
+where the objective is
+\begin{equation}
+  \label{eq:W2_obj}
+  f(\gamma; \mu, \nu)\defeq \int ||x-y||_2^2 {\rm d}\gamma(x,y).
+\end{equation}
+We will denote an optimal coupling $\gamma^\star(\mu,\nu)$.
+
+\bda{TODO: show more general/entropic? also decide on best way
+  of notating the coupling objective as $f$ doesn't seem ideal}
+
+\begin{figure}[t]
+  \centering
+\includegraphics[width=0.9\textwidth]{overview.jpg}
+\caption{Overview of latent OT. We parameterize and
+  learning an encoder $\phi$ and decoder $\psi$ for
+  measures $\mu_M$ and $\nu_M$ in metric space $(M, d_M)$.
+  1) Obtain measures in the lower-dimensional
+  latent space $(Z, d_z)$, \ie
+  $\mu_Z = \phi(\mu_M)$ and $\nu_Z = \phi(\nu_M)$,
+  2) Find the coupling in the latent space $\gamma_Z^\star$,
+  3) Map from the latent coupling back to the coupling
+  in the original space, hopefully obtaining the
+  coupling in the original space
+  $\psi(\gamma_Z^\star) \approx \gamma_M^\star$.
+}
+\label{fig:overview}
+\end{figure}
+
+\section{Latent OT}
+\label{sec:latent-ot}
+\bda{Putting here for now}
+I propose learning to map the measures to a lower-dimensional
+\emph{latent} metric space that we will denote $(Z,d_z)$, where
+we hope that finding couplings in this space are easier than
+the couplings in the original space.
+\Cref{fig:overview} summarizes this idea, which consists of
+an encoder for the measures into the latent
+space, $\phi_\theta$, and decoder for the couplings back into the
+orginal space, $\psi_\theta$, both parameterized by
+(possibly disjoint parts of) $\theta$ that we will learn.
+Then we can:
+\begin{enumerate}
+\item Obtain measures in the latent space with
+  $\mu_Z = \phi(\mu_M)$ and $\nu_Z = \phi(\nu_M)$.
+  This could be a push-forward measure, or could
+  be something that has a more global view of the
+  measure, \eg a CNN applied to an image or object.
+  This part has some remaining design choices on
+  how the measure should be compressed to a
+  simpler space.
+\item Find the coupling in the latent space $\gamma_Z^\star(\mu_Z, \nu_Z)$
+  by solving $W_2^2(\mu_M, \nu_M)$. This part
+  can be done using differentiable optimization
+  \citep{amos2019differentiable} to provide
+  $\partial \gamma_Z^\star / \partial \theta$.
+  Or, if the latent measures are Gaussians then
+  this coupling has a closed-form solution.
+\item Map from the latent coupling back to the coupling
+  in the original space
+  $\hat\gamma(\mu_M, \nu_M)\defeq \psi(\gamma_Z^\star)$,
+  hopefully obtaining the
+  coupling in the original space
+  $\psi(\gamma_Z^\star) \approx \gamma_M^\star$.
+  We want to ensure that
+  $\hat\gamma\in\Gamma(\mu_M,\nu_M)$, which we should
+  be able to do with a differentiable projection.
+\end{enumerate}
+
+
+
+\textbf{Losses and learning.}
+It remains to learn $\theta$, which we will do by leveraging the
+insight that we can set up predicted coupling $\hat\gamma(\mu_M, \nu_M)$
+so that we can differentiate it with respect to $\theta$ (!).
+This require using differentiable optimization \citep{amos2019differentiable}
+through the inner coupling problem with respect to the encoder
+(which we may need to be careful to set up properly).
+If we can obtain a ground-truth coupling $\gamma^\star(\mu,\nu)$ that we can
+set up an objective that regresses $\hat\gamma(\mu,\nu)$ onto it
+across the task distribution, \ie
+\begin{equation}
+  \gL^{\rm mse}(\theta) = \E_{(\mu,\nu)\sim\gT} ||\hat\gamma(\mu, \nu) - \gamma^\star(\mu, \nu)||_2^2.
+\end{equation}
+We could then obtain $\nabla_\theta \gL$ and learn the parameters with gradient descent.
+This may suffer from the issue that there may be multiple possible
+couplings, and that obtaining the original couplings may be too expensive,
+which is why we're trying to learn something more efficient in the first place.
+
+To overcome these issues with $\gL^{\rm mse}$, we can leverage the insight
+that the predicted coupling is a suboptimal solution to the objective $f$,
+which we can also differentiate, and we can take a step in the
+parameters that better-optimize this, \ie
+\begin{equation}
+  \gL^{\rm grad} = \E_{(\mu,\nu)\sim\gT} f(\mu, \nu, \hat\gamma).
+\end{equation}
+I call this $\gL^{\rm grad}$ as the simplest version is a gradient step
+on the primal solution of the objective, but could consider something more
+sophisticated that, \eg is actually solving the dual problem.
+$\gL^{\rm grad}$ seems appealing as it doesn't require the ground-truth
+solutions and updates the latent space to improve the original
+Wasserstein objective.
+
+\bda{Instantiations of meta-OT may have other losses,
+\eg sinkhorn residuals for entropic OT between discrete measures}
+
+
+\begin{algorithm}[h]
+  \begin{algorithmic}
+    \State $(\mu,\nu)=\gT\sim p(\gT)$
+    \Comment{Sample the task distribution}
+    \State $\hat\beta=\beta_\theta(\mu, \nu)$
+    \Comment{Predict duals associated with $\nu$}
+    \State $\hat\alpha=(D(1/\mu)K\hat\beta)^{-1}$
+    \Comment{Obtain duals associated with $\mu$}
+    \State $\hat\gamma=D(\alpha)KD(\beta)$
+    \Comment{Obtain coupling}
+  \end{algorithmic}
+  \caption{Meta-entropic optimal transport between discrete measures.
+    \bda{Maybe there's a better place to
+      illustrate/summarize these key computations}}
+  \label{alg:meta-entropic}
+\end{algorithm}
+
+\section{Learned subspace detours?}
+\todoc
+\citep{muzellec2019subspace,bonet2021subspace}
+
+\section{Other extensions}
+\todoc
+
+\subsubsection{Semi-amortized models via Sinkhorn iterations}
+\begin{center}
+\begin{tikzpicture}
+  \matrix (m) [
+      matrix of math nodes,row sep=2em,column sep=1em,
+      minimum width=2em,nodes={anchor=center}
+  ] {
+    \hat \alpha^{0}_\theta & \hat \alpha_\theta^{1} &
+    \ldots & \hat \alpha_\theta^{K} & \hat \alpha_\theta(x) \\};
+  \path[-stealth]
+    (m-1-1) edge node {} (m-1-2)
+    (m-1-2) edge node {} (m-1-3)
+    (m-1-3) edge node {} (m-1-4)
+    (m-1-4) edge node {} (m-1-5);
+\end{tikzpicture}
+\end{center}
+\begin{itemize}
+\item Predict an initial iterate $\hat \alpha_\theta^0(\mu, \nu)$,
+  with a neural network as before
+\item Refine the prediction with semi-amortization by with Sinkhorn.
+  For learning we differentiate through the Sinkhorn iterates
+  to learn the initial iterate
+\end{itemize}
+
+\subsubsection{Continuous latent couplings via differentiable optimization}
+\begin{itemize}
+\item Another interesting use-case of meta-learning is to uncover
+  latent structures present between two measures.
+\item Can connect here to existing work on low-dimensional
+  projections for OT and how we could use learning to learn
+  better low-dimensional projections, with a focus on
+  recovering the coupling rather than just an approximation
+  to the distance
+\item Maybe not computationally efficient but recovers
+  latent continuous structure from discrete data!
+\end{itemize}
+\todoc
+
+
+
+\section{Meta optimal transport with amortized optimization}
+\bda{Again, just an outline for now to set some notation}
+
+Given continuous or discrete \emph{input measures} $\mu$ and $\nu$,
+optimal transport methods find an \emph{optimal coupling} $\gamma^\star$
+under an \emph{objective} $f$ by solving the optimization problem
+\begin{equation}
+  \gamma^\star\in \argmin_{\gamma\in\Gamma(\mu,\nu)} f(\gamma; \mu, \nu)
+  \label{eq:gamma-star}
+\end{equation}
+where $\Gamma(\mu,\nu)$ is the space of couplings between
+the input measures.
+For example, the $p$-Wasserstein distance
+\citep{villani2009optimal,peyre2019computational} optimizes
+the objective
+\begin{equation}
+  \label{eq:W2_obj}
+  f(\gamma; \mu, \nu)\defeq \left[\int d(x, y)^p {\rm d}\gamma(x,y)\right]^{1/p},
+\end{equation}
+where $\mu$ and $\nu$ are in the same metric space with
+distance function $d$.
+
+Amortized optimization parameterize and
+learn a model $\hat \gamma_\theta(\mu, \nu)$ to improve
+solutions to \cref{eq:gamma-star}.
+We refer to this as \emph{meta} optimal transport
+as we now solve a higher-level optimization problem
+to predict the optimal couplings rather than solving
+\cref{eq:gamma-star} directly.
+We represent the input measures as \emph{tasks}
+$\gT\defeq(\mu, \nu)$ and assume that we have a
+\emph{task distribution} given by $p(\gT)$ of measures
+that we care about finding couplings between.
+Using the notation from \citep{amos2022tutorial},
+we summarize the use of amortized optimization here with
+$\gA_{\rm OT}\defeq (f, \Gamma, \gT, p(\gT), \hat \gamma_\theta, \gL)$,
+and it remains to define the model $\hat \gamma_\theta$ and
+loss $\gL$.
+
+\textbf{Challenges.}
+Trying to predict $\gamma^\star$ directly to \cref{eq:gamma-star}
+in the original form is difficult as it is often
+1) high-dimensional and 2) needs to be
+constrained to $\Gamma(\mu, \nu)$.
+
+\textbf{Overview.} Instead of amortizing \cref{eq:gamma-star}
+directly, we turn to specialized methods that parameterize
+and predict smaller components, such as the dual

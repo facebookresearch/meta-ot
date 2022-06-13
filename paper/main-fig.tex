@@ -1,0 +1,74 @@
+% Copyright (c) Meta Platforms, Inc. and affiliates.
+
+\begin{tikzpicture}[every path/.style={thick}]
+  \tikzstyle{obs} = [latent,fill=blue!20];
+  \tikzset{plate caption/.append style={below right=-.3cm and -.35cm of #1.south east}};
+  \node[obs] (alpha) {$\alpha$};
+  \node[obs,below=.1cm of alpha] (beta) {$\beta$};
+  \node[obs,below=.1cm of beta] (c) {$c$};
+  \node[obs,right=.6cm of beta,fill=red!20] (pi) {$\pi^\star$};
+  \node[latent,above=1.1cm of pi] (theta) {$\theta$};
+  \scoped[on background layer]{
+    \plate [inner sep=.1cm,fill=gray!15] {plate} {(alpha) (beta) (c) (pi)} {};
+  };
+  \edge {alpha,beta,c} {pi};
+  \edge {theta} {pi};
+  \node[below right=-5.5mm and -6mm of plate.south east] {$\gD$};
+  \begin{pgfinterruptboundingbox}
+    \node[below=0mm of plate.south] {General};
+  \end{pgfinterruptboundingbox}
+\end{tikzpicture}
+\hfill
+\begin{tikzpicture}[every path/.style={thick}]
+  \tikzstyle{obs} = [latent,fill=blue!20];
+  \tikzset{plate caption/.append style={below right=-.3cm and -.35cm of #1.south east}};
+  \node[obs] (alpha) {$\alpha$};
+  \node[obs,below=.1cm of alpha] (beta) {$\beta$};
+  \node[obs,below=.1cm of beta] (c) {$c$};
+  \node[obs,right=.6cm of beta,fill=green!20] (f) {$f^\star$};
+  \node[obs,right=.6cm of f,fill=green!20] (g) {$g^\star$};
+  \node[obs,right=.6cm of g,fill=red!20] (P) {$P^\star$};
+  \node[latent,above=1.1cm of f] (theta) {$\theta$};
+  \scoped[on background layer]{
+    \plate [inner sep=.1cm,fill=gray!15] {plate} {(alpha) (beta) (c) (f) (g) (P)} {};
+  };
+  \edge {alpha,beta,c} {f};
+  \edge {theta} {f};
+  \edge {f} {g};
+  \edge {g} {P};
+  \draw[->] (f) to [out=-30,in=-150] (P);
+  \node[below right=-5.5mm and -6mm of plate.south east] {$\gD$};
+  \begin{pgfinterruptboundingbox}
+    \node[below=0mm of plate.south] {Discrete (Entropic)};
+  \end{pgfinterruptboundingbox}
+\end{tikzpicture}
+\hfill
+\begin{tikzpicture}[every path/.style={thick}]
+  \tikzstyle{obs} = [latent,fill=blue!20];
+  \tikzset{plate caption/.append style={below right=-.3cm and -.35cm of #1.south east}};
+  \node[obs] (alpha) {$\alpha$};
+  \node[obs,below=.1cm of alpha] (beta) {$\beta$};
+  \node[obs,below=.1cm of beta,draw=none,fill=none] (c) {};
+  \node[obs,right=.6cm of beta,fill=green!20] (psi) {$\psi^\star$};
+  \node[obs,right=.6cm of psi,fill=red!20] (T) {$T^\star$};
+  \node[latent,above=1.1cm of psi] (theta) {$\theta$};
+  \scoped[on background layer]{
+    \plate [inner sep=.1cm,fill=gray!15] {plate} {(alpha) (beta) (c) (psi) (T)} {};
+  };
+  \node[below right=-5.5mm and -6mm of plate.south east] {$\gD$};
+  \edge {alpha,beta} {psi};
+  \edge {theta} {psi};
+  \edge {psi} {T};
+  \begin{pgfinterruptboundingbox}
+    \node[below=0mm of plate.south] {Continuous (Wasserstein-2)};
+  \end{pgfinterruptboundingbox}
+\end{tikzpicture} \\[6mm]
+\circlegend{{blue!20}}{Input measures and cost} \hspace{2mm}
+\circlegend{{green!20}}{Dual potentials} \hspace{2mm}
+\circlegend{{red!20}}{Couplings}
+
+%%% Local Variables:
+%%% coding: utf-8
+%%% mode: latex
+%%% TeX-master: "meta-ot"
+%%% End:

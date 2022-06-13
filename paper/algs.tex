@@ -1,0 +1,47 @@
+% Copyright (c) Meta Platforms, Inc. and affiliates.
+
+\begin{minipage}[t]{0.49\textwidth}
+\begin{algorithm}[H]
+    \caption{Training Meta OT}
+    \begin{algorithmic}
+    \footnotesize
+    \State Initialize amortization model with $\theta_0$
+    \For{iteration $i$}
+    \State Sample $(\alpha, \beta, c)\sim\gD$
+    \State Predict duals $\hat f_\theta$ or $\hat \varphi_\theta$ on the sample
+    \State Estimate the loss in \cref{eq:amor-entropic-loss} or \cref{eq:amor-w2gn-loss}
+    \State Update $\theta_{i+1}$ with a gradient step
+    \EndFor
+    \end{algorithmic}
+    \label{alg:meta-ot-training}
+\end{algorithm}
+\end{minipage}
+\hfill
+\begin{minipage}[t]{0.49\textwidth}
+\begin{algorithm}[H]
+    \caption{Fine-tuning with Sinkhorn}
+    \begin{algorithmic}
+    \footnotesize
+    \State Predict duals $\hat f_\theta(\alpha, \beta, c)$
+    \State Compute $\hat g$ from $\hat f_\theta$ using \cref{eq:f-to-g}
+    \State \Return Sinkhorn($\alpha, \beta, c, \epsilon, \hat f_\theta, \hat g$)
+    \end{algorithmic}
+    \label{alg:sinkhorn-finetuning}
+\end{algorithm}
+\vspace*{-5mm}
+\begin{algorithm}[H]
+    \caption{Fine-tuning with W2GN}
+    \begin{algorithmic}
+    \footnotesize
+    \State Predict dual ICNN parameters $\hat \varphi_\theta(\alpha, \beta, c)$
+    \State \Return W2GN($\alpha, \beta, c, T, \hat \varphi_\theta$)
+    \end{algorithmic}
+    \label{alg:w2gn-finetuning}
+\end{algorithm}
+\end{minipage}
+
+%%% Local Variables:
+%%% coding: utf-8
+%%% mode: latex
+%%% TeX-master: "meta-ot"
+%%% End:
