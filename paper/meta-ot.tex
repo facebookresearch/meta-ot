@@ -217,14 +217,14 @@ Meta OT solvers on top of in discrete and continuous settings.
   \vspace{-11mm}
   \begin{minipage}{0.5\textwidth}
     \begin{algorithm}[H]
-      \caption{\footnotesize Sinkhorn($\alpha, \beta, c, \epsilon, f_0=0, g_0=0$)}
+      \caption{\footnotesize Sinkhorn($\alpha, \beta, c, \epsilon, f_0=0$)}
       \begin{algorithmic}
         \footnotesize
         \For {iteration $i$ = 1 to $N$}
-        \State $f_{i} \leftarrow \epsilon \log a - \epsilon\log\left(
-          K \exp\{g_{i-1}/\epsilon\}\right)$
         \State $g_{i} \leftarrow \epsilon \log b - \epsilon\log\left(
           K^\top \exp\{f_{i-1}/\epsilon\}\right)$
+        \State $f_{i} \leftarrow \epsilon \log a - \epsilon\log\left(
+          K \exp\{g_i/\epsilon\}\right)$
         \EndFor
         \State Compute $P_N$ from $f_N,g_N$ using \cref{eq:entropic-duals-to-primal}
         \State\Return $P_N\approx P^\star$
@@ -1017,7 +1017,8 @@ one fallback option is to re-solve the instance from scratch.
 
 
 \subsection*{Acknowledgments}
-We would like to thank Mark Tygert, Maximilian Nickel,
+We would like to thank Mathieu Blondel,
+Mark Tygert, Maximilian Nickel,
 and Eugene Vinitsky for insightful comments and discussions.
 The core set of tools in Python
 \citep{van1995python,oliphant2007python}

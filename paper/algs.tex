@@ -23,8 +23,8 @@
     \begin{algorithmic}
     \footnotesize
     \State Predict duals $\hat f_\theta(\alpha, \beta, c)$
-    \State Compute $\hat g$ from $\hat f_\theta$ using \cref{eq:f-to-g}
-    \State \Return Sinkhorn($\alpha, \beta, c, \epsilon, \hat f_\theta, \hat g$)
+    % \State Compute $\hat g$ from $\hat f_\theta$ using \cref{eq:f-to-g}
+    \State \Return Sinkhorn($\alpha, \beta, c, \epsilon, \hat f_\theta$) %, \hat g$)
     \end{algorithmic}
     \label{alg:sinkhorn-finetuning}
 \end{algorithm}
