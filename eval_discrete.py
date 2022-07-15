@@ -52,16 +52,29 @@ def main():
     parser.add_argument('--pkl_tag', type=str, default='latest')
     parser.add_argument('--train', type=bool, default=False)
     parser.add_argument('--timestamp', action='store_true')
+    parser.add_argument('--test_data', type=str, default=None)
     parser.add_argument('--num_test_samples', type=int, default=10)
     parser.add_argument('--no_errs', action='store_true')
     args = parser.parse_args()
 
     exp = pkl.load(open(f'{args.exp_root}/{args.pkl_tag}.pkl', 'rb'))
 
-    if exp.cfg.data == 'mnist':
+    if args.test_data is None:
+        args.test_data = exp.cfg.data
+
+    if args.test_data == 'mnist':
         test_sampler = data.MNISTPairSampler(train=args.train)
         geom = test_sampler.geom
-    elif exp.cfg.data == 'world':
+    elif args.test_data == 'usps28':
+        test_sampler = data.USPSPairSampler(train=args.train, reshape=True)
+        geom = test_sampler.geom
+    elif args.test_data == 'doodles':
+        test_sampler = data.DoodlePairSampler(train=args.train)
+        geom = test_sampler.geom
+    elif args.test_data == 'random':
+        test_sampler = data.RandomSampler()
+        geom = test_sampler.geom
+    elif args.test_data == 'world':
         test_sampler = data.WorldPairSampler()
         geom = test_sampler.geom
     else:
@@ -73,7 +86,7 @@ def main():
     if not args.no_errs:
         @jax.jit
         def compute_errs(a, b):
-            if exp.cfg.data == 'mnist':
+            if args.test_data in ['mnist', 'random', 'usps28', 'doodles']:
                 max_iterations = 25
             elif exp.cfg.data == 'world':
                 max_iterations = 1000
@@ -113,7 +126,10 @@ def main():
             ax.set_xlabel('Sinkhorn Iterations')
             to_title = {
                 'mnist': 'MNIST',
-                'world': 'Spherical',
+                'usps28': 'USPS28',
+                'doodles': 'Google Doodles',
+                'world': 'World',
+                'random': 'Random'
             }
             ax.set_title(to_title[exp.cfg.data])
             fig.tight_layout()

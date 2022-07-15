@@ -46,7 +46,7 @@ class Workspace(object):
         self.train_iter = 0
         self.output = 0
 
-        if self.cfg.data == 'mnist':
+        if self.cfg.data in ['mnist', 'random', 'doodles', 'usps28']:
             na = nb = 784
             self.n_output = na
         elif self.cfg.data == 'world':
@@ -78,6 +78,15 @@ class Workspace(object):
             self.geom = train_sampler.geom
         elif self.cfg.data == 'world':
             train_sampler = data.WorldPairSampler(batch_size=self.cfg.batch_size, debug=False)
+            self.geom = train_sampler.geom
+        elif self.cfg.data == 'usps28':
+            train_sampler = data.USPSPairSampler(train=True, batch_size=self.cfg.batch_size, debug=False, reshape=True)
+            self.geom = train_sampler.geom
+        elif self.cfg.data == 'doodles':
+            train_sampler = data.DoodlePairSampler(train=True, batch_size=self.cfg.batch_size, debug=False)
+            self.geom = train_sampler.geom
+        elif self.cfg.data == 'random':
+            train_sampler = data.RandomSampler(batch_size=self.cfg.batch_size, debug=False)
             self.geom = train_sampler.geom
         else:
             assert False
