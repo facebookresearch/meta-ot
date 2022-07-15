@@ -10,7 +10,7 @@ import numpy.random as npr
 
 import torch
 from torchvision import transforms
-from torchvision.datasets import MNIST
+from torchvision.datasets import MNIST, USPS
 
 from collections import namedtuple
 
@@ -48,10 +48,15 @@ class MNISTPairSampler:
         data = data/data.sum(axis=1, keepdims=True)
         self.data = data
 
+        """
         x_grid = []
         for i in jnp.linspace(1, 0, num=28):
             for j in jnp.linspace(0, 1, num=28):
                 x_grid.append([j, i])
+        """
+
+        x_grid = jnp.linspace(0, 1, num=784).reshape(784, 1)
+
         x_grid = jnp.array(x_grid)
         self.geom = PointCloud(x=x_grid, y=x_grid, epsilon=self.epsilon, online=True)
 
@@ -217,3 +222,191 @@ class ImagePairSampler:
         X_fulls = jnp.stack(X_fulls)
         Y_fulls = jnp.stack(Y_fulls)
         return X_samplers, Y_samplers, X_squares, Y_squares, X_fulls, Y_fulls
+
+@dataclass
+class USPSPairSampler:
+    train: bool = True
+    batch_size: int = 128
+    epsilon: float = 1e-2
+    debug: bool = False
+    reshape: bool = False
+
+    def __post_init__(self):
+
+        if self.reshape:
+            dataset = np.load(SCRIPT_DIR+'/../data/usps28.npy')
+
+            if self.train:
+                data = dataset[:7291,:]
+            else:
+                data = dataset[7291:, :]
+        else:
+            dataset = USPS(
+                '/tmp/usps/',
+                download=True,
+                train=self.train,
+            )
+            data = dataset/255.
+
+        data = jnp.float64(data)
+
+        if data.ndim > 2:
+            dim = data.shape[1] * data.shape[2]
+        else:
+            dim = data.shape[1]
+        data = data.reshape(-1, dim)
+        data = data / data.sum(axis=1, keepdims=True)
+        self.data = data
+
+        #x_grid = []
+        #for i in jnp.linspace(1, 0, num=28):
+        #    for j in jnp.linspace(0, 1, num=28):
+        #        x_grid.append([j, i])
+
+        x_grid = jnp.linspace(0, 1, num=dim).reshape(dim, 1)
+        x_grid = jnp.array(x_grid)
+        self.geom = PointCloud(x=x_grid, y=x_grid, epsilon=self.epsilon, online=True)
+
+        @jax.jit
+        def _sample(key):
+            k1, k2, key = jax.random.split(key, num=3)
+            I = jax.random.randint(k1, shape=[self.batch_size], minval=0, maxval=len(data))
+            J = jax.random.randint(k2, shape=[self.batch_size], minval=0, maxval=len(data))
+            a = data[I]
+            b = data[J]
+
+            return PairData(a, b)
+        self._sample = _sample
+
+        if self.debug:
+            key = jax.random.PRNGKey(0)
+            self._debug_data = self._sample(key)
+
+
+    def __call__(self, key):
+        if self.debug:
+            return self._debug_data
+        else:
+            return self._sample(key)
+
+
+@dataclass
+class DoodlePairSampler:
+    train: bool = True
+    batch_size: int = 128
+    epsilon: float = 1e-2
+    debug: bool = False
+
+    def __post_init__(self):
+
+        data = []
+        categories = os.listdir(SCRIPT_DIR + '/../data/doodles/')
+
+        for category in categories:
+            category_data = np.load(SCRIPT_DIR + '/../data/doodles/' + category)
+
+            if self.train:
+                data.append(category_data[:100000, :])
+            else:
+                data.append(category_data[100000:, :])
+
+        data = np.concatenate(data)
+        dim = data.shape[1]
+        data = jnp.float64(data) / 255.
+        data = data.reshape(-1, dim)
+        data = data / data.sum(axis=1, keepdims=True)
+        self.data = data
+
+        # x_grid = []
+        # for i in jnp.linspace(1, 0, num=28):
+        #    for j in jnp.linspace(0, 1, num=28):
+        #        x_grid.append([j, i])
+
+        x_grid = jnp.linspace(0, 1, num=dim).reshape(dim, 1)
+        x_grid = jnp.array(x_grid)
+        self.geom = PointCloud(x=x_grid, y=x_grid, epsilon=self.epsilon, online=True)
+
+        @jax.jit
+        def _sample(key):
+            k1, k2, key = jax.random.split(key, num=3)
+            I = jax.random.randint(k1, shape=[self.batch_size], minval=0, maxval=len(data))
+            J = jax.random.randint(k2, shape=[self.batch_size], minval=0, maxval=len(data))
+            a = data[I]
+            b = data[J]
+
+            return PairData(a, b)
+
+        self._sample = _sample
+
+        if self.debug:
+            key = jax.random.PRNGKey(0)
+            self._debug_data = self._sample(key)
+
+    def __call__(self, key):
+        if self.debug:
+            return self._debug_data
+        else:
+            return self._sample(key)
+
+
+@dataclass
+class RandomSampler:
+    batch_size: int = 128
+    epsilon: float = 1e-2
+    type: str = 'uniform'
+    dim: int = 784
+    debug: bool = False
+
+    def __post_init__(self):
+
+        x = jnp.linspace(0, 1, num=self.dim)
+        x_grid = jnp.array(x.reshape(self.dim, 1))
+        self.geom = PointCloud(x=x_grid, y=x_grid, epsilon=self.epsilon, online=True)
+
+        @jax.jit
+        def _sample(key):
+
+            if self.type == 'gauss':
+
+                k1, k2, k3, k4, key = jax.random.split(key, num=5)
+
+                mean_1 = jax.random.uniform(k1, minval=.3, maxval=.7, shape=(self.batch_size,))
+                std_1 = jax.random.uniform(k2, minval=.1, maxval=.3, shape=(self.batch_size,))
+
+                a = jnp.asarray([jnp.exp(-(x - mean) ** 2 / (2 * std ** 2)) for mean, std in zip(mean_1, std_1)])
+                a = a / a.sum(axis=1, keepdims=1)
+
+                mean_2 = jax.random.uniform(k3, minval=.3, maxval=.7, shape=(self.batch_size,))
+                std_2 = jax.random.uniform(k4, minval=.1, maxval=.3, shape=(self.batch_size,))
+
+                b = jnp.asarray([jnp.exp(-(x - mean) ** 2 / (2 * std ** 2)) for mean, std in zip(mean_2, std_2)])
+                b = b / b.sum(axis=1, keepdims=1)
+
+            elif self.type == 'uniform':
+
+                k1, k2, key = jax.random.split(key, num=3)
+
+                a = jax.random.uniform(k1, minval=0, maxval=1, shape=(self.batch_size, 784))
+                a = jnp.where(a > .95, a, 0)
+                a = a / a.sum(axis=1, keepdims=1)
+
+                b = jax.random.uniform(k2, minval=0, maxval=1, shape=(self.batch_size, 784))
+                b = jnp.where(b > .95, b, 0)
+                b = b / b.sum(axis=1, keepdims=1)
+            else:
+                assert False
+
+            return PairData(a, b)
+
+        self._sample = _sample
+
+        if self.debug:
+            key = jax.random.PRNGKey(0)
+            self._debug_data = self._sample(key)
+
+    def __call__(self, key):
+        if self.debug:
+            return self._debug_data
+        else:
+            return self._sample(key)
+
