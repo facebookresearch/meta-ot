@@ -16,7 +16,7 @@ import jax.numpy as jnp
 import time
 
 from ott.geometry.geometry import Geometry
-from ott.core import quad_problems, problems, sinkhorn
+from ott.core import quad_problems, linear_problems, sinkhorn
 from ott.tools import transport
 from ott.geometry.pointcloud import PointCloud
 
@@ -43,12 +43,8 @@ def main():
                                          color_scheme='Linux',
                                          call_pdb=1)
 
-    expPath = './exp/local/'
-    dirs = sorted(next(os.walk(expPath))[1])
-    latest = sorted(next(os.walk(expPath + dirs[-1]))[1])[-1]
-
     parser = argparse.ArgumentParser()
-    parser.add_argument('--exp_root', type=str, default=expPath + dirs[-1] + '/' + latest)
+    parser.add_argument('exp_root', type=str)
     parser.add_argument('--pkl_tag', type=str, default='latest')
     parser.add_argument('--train', type=bool, default=False)
     parser.add_argument('--timestamp', action='store_true')
@@ -93,7 +89,7 @@ def main():
             else:
                 assert False
             solver = sinkhorn.make(lse_mode=True, inner_iterations=1, max_iterations=max_iterations, threshold=-1.)
-            ot_prob = problems.LinearProblem(geom, a=a, b=b)
+            ot_prob = linear_problems.LinearProblem(geom, a=a, b=b)
             out = solver(ot_prob)
 
             f_pred = exp.potential_model.apply({'params': exp.params}, a, b)
@@ -148,7 +144,7 @@ def main():
 
     @jax.jit
     def run_standard(a, b):
-        ot_prob = problems.LinearProblem(geom, a=a, b=b)
+        ot_prob = linear_problems.LinearProblem(geom, a=a, b=b)
         out = solver(ot_prob)
         return out.converged
 
@@ -162,7 +158,7 @@ def main():
         f_pred = exp.potential_model.apply({'params': exp.params}, a, b)
         g_pred = exp.g_from_f(a, b, f_pred)
         init = (f_pred, g_pred)
-        ot_prob = problems.LinearProblem(geom, a=a, b=b)
+        ot_prob = linear_problems.LinearProblem(geom, a=a, b=b)
         state = solver.init_state(ot_prob, init)
         out_meta = solver(ot_prob, init)
         return out_meta.converged

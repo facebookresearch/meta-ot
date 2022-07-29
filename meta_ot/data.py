@@ -58,7 +58,7 @@ class MNISTPairSampler:
         x_grid = jnp.linspace(0, 1, num=784).reshape(784, 1)
 
         x_grid = jnp.array(x_grid)
-        self.geom = PointCloud(x=x_grid, y=x_grid, epsilon=self.epsilon, online=True)
+        self.geom = PointCloud(x=x_grid, y=x_grid, epsilon=self.epsilon) #, online=True)
 
         @jax.jit
         def _sample(key):
@@ -129,7 +129,7 @@ class WorldPairSampler:
 
         self.geom = PointCloud(
             x=self.supply_locs_euclidean, y=self.demand_locs_euclidean,
-            epsilon=self.epsilon, online=True, cost_fn=utils.SphereDist())
+            epsilon=self.epsilon, cost_fn=utils.SphereDist())
 
         @jax.jit
         def _sample(key):
@@ -265,7 +265,7 @@ class USPSPairSampler:
 
         x_grid = jnp.linspace(0, 1, num=dim).reshape(dim, 1)
         x_grid = jnp.array(x_grid)
-        self.geom = PointCloud(x=x_grid, y=x_grid, epsilon=self.epsilon, online=True)
+        self.geom = PointCloud(x=x_grid, y=x_grid, epsilon=self.epsilon) #, online=True)
 
         @jax.jit
         def _sample(key):
@@ -324,7 +324,7 @@ class DoodlePairSampler:
 
         x_grid = jnp.linspace(0, 1, num=dim).reshape(dim, 1)
         x_grid = jnp.array(x_grid)
-        self.geom = PointCloud(x=x_grid, y=x_grid, epsilon=self.epsilon, online=True)
+        self.geom = PointCloud(x=x_grid, y=x_grid, epsilon=self.epsilon) #, online=True)
 
         @jax.jit
         def _sample(key):
@@ -361,7 +361,7 @@ class RandomSampler:
 
         x = jnp.linspace(0, 1, num=self.dim)
         x_grid = jnp.array(x.reshape(self.dim, 1))
-        self.geom = PointCloud(x=x_grid, y=x_grid, epsilon=self.epsilon, online=True)
+        self.geom = PointCloud(x=x_grid, y=x_grid, epsilon=self.epsilon) #, online=True)
 
         @jax.jit
         def _sample(key):
