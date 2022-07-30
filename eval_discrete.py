@@ -121,39 +121,39 @@ def main():
             for k,v in errs.items():
                 all_errs[k].append(v)
 
-        fig, ax = plt.subplots(1, 1, figsize=(4,2.))
-        colors = plt.style.library['bmh']['axes.prop_cycle'].by_key()['color']
+            fig, ax = plt.subplots(1, 1, figsize=(4,2.))
+            colors = plt.style.library['bmh']['axes.prop_cycle'].by_key()['color']
 
-        def summarize_errs(errs):
-            errs = np.stack(errs)
-            mean = np.mean(errs, axis=0)
-            std = np.std(errs, axis=0)
-            return mean, std
+            def summarize_errs(errs):
+                errs = np.stack(errs)
+                mean = np.mean(errs, axis=0)
+                std = np.std(errs, axis=0)
+                return mean, std
 
-        def plot_single(errs, color):
-            mean, std = summarize_errs(errs)
-            xs = np.arange(len(mean))
-            ax.plot(xs, mean, color=color, alpha=0.7)
-            ax.fill_between(xs, mean-std, mean+std, color=color, alpha=0.3)
+            def plot_single(errs, color):
+                mean, std = summarize_errs(errs)
+                xs = np.arange(len(mean))
+                ax.plot(xs, mean, color=color, alpha=0.7)
+                ax.fill_between(xs, mean-std, mean+std, color=color, alpha=0.3)
 
-        for key, color in zip(['zeros', 'meta_ot', 'gauss'], colors):
-            plot_single(all_errs[key], color)
+            for key, color in zip(['zeros', 'meta_ot', 'gauss'], colors):
+                plot_single(all_errs[key], color)
 
-        ax.set_ylabel('Error')
-        ax.set_xlabel('Sinkhorn Iterations')
-        to_title = {
-            'mnist': 'MNIST',
-            'usps28': 'USPS28',
-            'doodles': 'Google Doodles',
-            'world': 'World',
-            'random': 'Random'
-        }
-        ax.set_title(to_title[exp.cfg.data])
-        fig.tight_layout()
-        fig.savefig(fname, transparent=True)
-        os.system(f'pdfcrop {fname} {fname}')
+            ax.set_ylabel('Error')
+            ax.set_xlabel('Sinkhorn Iterations')
+            to_title = {
+                'mnist': 'MNIST',
+                'usps28': 'USPS28',
+                'doodles': 'Google Doodles',
+                'world': 'Spherical',
+                'random': 'Random'
+            }
+            ax.set_title(to_title[exp.cfg.data])
+            fig.tight_layout()
+            fig.savefig(fname, transparent=True)
+            os.system(f'pdfcrop {fname} {fname}')
 
-        plt.close(fig)
+            plt.close(fig)
 
     # Runtime profiling
     max_iterations = 100000
