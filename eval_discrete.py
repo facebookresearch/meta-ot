@@ -51,6 +51,7 @@ def main():
     parser.add_argument('--test_data', type=str, default=None)
     parser.add_argument('--num_test_samples', type=int, default=10)
     parser.add_argument('--no_errs', action='store_true')
+    parser.add_argument('--no_labels', action='store_true')
     args = parser.parse_args()
 
     exp = pkl.load(open(f'{args.exp_root}/{args.pkl_tag}.pkl', 'rb'))
@@ -139,8 +140,6 @@ def main():
             for key, color in zip(['zeros', 'meta_ot', 'gauss'], colors):
                 plot_single(all_errs[key], color)
 
-            ax.set_ylabel('Error')
-            ax.set_xlabel('Sinkhorn Iterations')
             to_title = {
                 'mnist': 'MNIST',
                 'usps28': 'USPS28',
@@ -148,7 +147,12 @@ def main():
                 'world': 'Spherical',
                 'random': 'Random'
             }
-            ax.set_title(to_title[exp.cfg.data])
+            if not args.no_labels:
+                ax.set_ylabel('Error')
+                ax.set_xlabel('Sinkhorn Iterations')
+                ax.set_title(to_title[exp.cfg.data])
+            else:
+                ax.set_ylim(0., 0.4)
             fig.tight_layout()
             fig.savefig(fname, transparent=True)
             os.system(f'pdfcrop {fname} {fname}')
