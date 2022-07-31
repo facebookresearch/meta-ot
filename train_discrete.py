@@ -6,6 +6,7 @@ from hydra.utils import instantiate
 
 import numpy as np
 
+import time
 import csv
 import os
 import pickle as pkl
@@ -70,6 +71,7 @@ class Workspace(object):
 
 
     def run(self):
+        start_time = time.time()
         logf, writer = self._init_logging()
 
         opt = instantiate(self.cfg.optim)
@@ -108,17 +110,46 @@ class Workspace(object):
             loss, grads = grad_fn(state.params, batch)
             return loss, state.apply_gradients(grads=grads)
 
+        pred_error_vmap = jax.vmap(self.pred_error, in_axes=[0, 0, None])
+        @jax.jit
+        def compute_train_error(params, key):
+            batch = train_sampler(key)
+            err = pred_error_vmap(batch.a, batch.b, params)
+            return jnp.mean(err)
+
         loss_meter = utils.RunningAverageMeter()
         while self.train_iter < self.cfg.num_train_iter:
             k1, self.key = jax.random.split(self.key)
             loss, state = update(state, k1)
             loss_meter.update(loss.item())
-            if self.train_iter % 100 == 0:
-                print(f'[{self.train_iter}] train_loss={loss_meter.val:.2e}')
+            if self.train_iter % 1000 == 0:
                 self.params = state.params
+                k1, self.key = jax.random.split(self.key)
+                train_err = compute_train_error(state.params, k1)
+                print(f'[{self.train_iter}] train_loss={loss_meter.val:.2e} train_err={train_err:.2e}')
+                writer.writerow({
+                    'iter': self.train_iter,
+                    'train_loss': loss_meter.avg,
+                    'train_err': train_err,
+                    'time': time.time()-start_time,
+                })
+                logf.flush()
                 self.save()
                 losses = []
             self.train_iter += 1
+
+    def pred_error(self, a, b, params):
+        f_pred = self.potential_model.apply(
+            {'params': params}, a, b)
+        g_pred = self.g_from_f(a, b, f_pred)
+        # b marginal error is ~zero.
+        err = sinkhorn.marginal_error(
+            f_pred, g_pred, target=a,
+            geom=self.geom, axis=1,
+            norm_error = [1],
+            lse_mode = True
+        )
+        return err
 
     def g_from_f(self, a, b, f):
         g = self.geom.update_potential(
@@ -164,7 +195,7 @@ class Workspace(object):
 
     def _init_logging(self):
         logf = open('log.csv', 'a')
-        fieldnames = ['iter', 'loss', 'kl', 'ess']
+        fieldnames = ['iter', 'time', 'train_loss', 'train_err']
         writer = csv.DictWriter(logf, fieldnames=fieldnames)
         if os.stat('log.csv').st_size == 0:
             writer.writeheader()
