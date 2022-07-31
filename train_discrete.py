@@ -141,11 +141,17 @@ class Workspace(object):
     def pred_error(self, a, b, params):
         f_pred = self.potential_model.apply(
             {'params': params}, a, b)
+        # Apply one sinkhorn itertaion updating both potential
+        # so the error reported here is the same as the first
+        # error reported from OTT after the first iteration.
         g_pred = self.g_from_f(a, b, f_pred)
-        # b marginal error is ~zero.
+        f_pred = self.geom.update_potential(
+            f_pred, g_pred,
+            jnp.log(a), 0, axis=1)
+        # Marginal error of the a measure is ~0, no need to add
         err = sinkhorn.marginal_error(
-            f_pred, g_pred, target=a,
-            geom=self.geom, axis=1,
+            f_pred, g_pred, target=b,
+            geom=self.geom, axis=0,
             norm_error = [1],
             lse_mode = True
         )
