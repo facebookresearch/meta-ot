@@ -30,6 +30,7 @@ import optax
 
 import matplotlib.pyplot as plt
 from PIL import Image
+import time
 
 from collections import namedtuple
 
@@ -172,6 +173,11 @@ class Workspace(object):
             X_sampler, Y_sampler = ImageSampler(X_path), ImageSampler(Y_path)
             val_samplers.append((X_sampler, Y_sampler))
 
+        X_samplers, Y_samplers, X_squares, Y_squares, X_fulls, Y_fulls = \
+            sampler.sample_image_pair_batch(
+                self.cfg.meta_batch_size, self.val_pairs)
+        fixed_train_samplers = list(zip(*(X_samplers, Y_samplers)))
+
         self.pretrain_identity(sampler)
 
         lr_schedule = optax.warmup_cosine_decay_schedule(
@@ -241,50 +247,53 @@ class Workspace(object):
         corr_loss_meter = RunningAverageMeter()
         cycle_loss_meter = RunningAverageMeter()
         best_dual = None
+        start_time = time.time()
         for i in range(int(self.cfg.num_train_iter)):
             X_samplers, Y_samplers, X_squares, Y_squares, X_fulls, Y_fulls = \
                 sampler.sample_image_pair_batch(
                     self.cfg.meta_batch_size, self.val_pairs)
-            num_inner_iter = self.cfg.num_inner_iter_warmup if i < self.cfg.num_warmup_iter \
-                else self.cfg.num_inner_iter
-            for j in range(num_inner_iter):
-                k1, self.key = jax.random.split(self.key, 2)
-                loss, corr_loss, cycle_loss, meta_state, self.meta_batch_stats = \
-                  update_batch(
-                      k1, meta_state, self.meta_batch_stats,
-                      X_squares, Y_squares, X_fulls, Y_fulls)
-                loss_meter.update(loss.item())
-                corr_loss_meter.update(corr_loss.item())
-                cycle_loss_meter.update(cycle_loss.item())
+            k1, self.key = jax.random.split(self.key, 2)
+            loss, corr_loss, cycle_loss, meta_state, self.meta_batch_stats = \
+                update_batch(
+                    k1, meta_state, self.meta_batch_stats,
+                    X_squares, Y_squares, X_fulls, Y_fulls)
+            loss_meter.update(loss.item())
+            corr_loss_meter.update(corr_loss.item())
+            cycle_loss_meter.update(cycle_loss.item())
 
-            if i < self.cfg.num_warmup_iter or i % 1000 == 0:
-                val_dual_obj = self.val_dual_objs(val_samplers)
-                print(f'iter={i} train_loss={loss_meter.avg:.2e} corr_loss={corr_loss_meter.avg:.2e} cycle_loss={cycle_loss_meter.avg:.2e} val_dual_obj={val_dual_obj:.2e}')
+            if i % 1000 == 0:
+                self.meta_params = meta_state.params
+                train_dual_obj = self.dual_objs(fixed_train_samplers)
+                # val_dual_obj = self.val_dual_objs(val_samplers)
+                print(f'iter={i} train_loss={loss_meter.avg:.2e} corr_loss={corr_loss_meter.avg:.2e} cycle_loss={cycle_loss_meter.avg:.2e} train_dual_obj={train_dual_obj:.2e}')
                 writer.writerow({
-                    'iter': i, 'cycle_loss': cycle_loss_meter.avg, 'val_dual_obj': val_dual_obj
+                    'iter': i,
+                    'time': time.time()-start_time,
+                    'loss': loss_meter.avg,
+                    'corr_loss': corr_loss_meter.avg,
+                    'cycle_loss': cycle_loss_meter.avg,
+                    'dual_obj': train_dual_obj,
                 })
                 logf.flush()
-                self.meta_params = meta_state.params
                 self.plot(X_samplers[0], Y_samplers[0], loc='latest-train.png')
                 X_sampler, Y_sampler = debug_sampler.samplers
                 self.plot(X_sampler, Y_sampler, loc='latest-val.png')
                 self.save(tag='latest')
-                if best_dual is None or val_dual_obj > best_dual:
-                    best_dual = val_dual_obj
+                if best_dual is None or train_dual_obj > best_dual:
+                    best_dual = train_dual_obj
                     self.save(tag='best')
 
 
-    def val_dual_objs(self, val_samplers):
+    def dual_objs(self, samplers):
         # TODO: Better jit this?
         vs = []
-        for (X_sampler, Y_sampler) in val_samplers:
+        for (X_sampler, Y_sampler) in samplers:
             D_params, D_conj_params = self.meta_icnn.apply(
                 {'params': self.meta_params, 'batch_stats': self.meta_batch_stats},
                 X_sampler.image_square, Y_sampler.image_square, train=False,
                 unravel_fn=self.unravel_icnn_params_fn)
             vs.append(self.dual_obj(X_sampler, Y_sampler, D_params).item())
         return np.mean(vs)
-
 
 
     def dual_obj(self, X_sampler, Y_sampler, D_params, num_samples=1024, seed=0):
@@ -328,7 +337,8 @@ class Workspace(object):
 
     def _init_logging(self):
         logf = open('log.csv', 'a')
-        fieldnames = ['iter', 'cycle_loss', 'val_dual_obj']
+        fieldnames = [
+            'iter', 'time', 'loss', 'corr_loss', 'cycle_loss', 'dual_obj']
         writer = csv.DictWriter(logf, fieldnames=fieldnames)
         if os.stat('log.csv').st_size == 0:
             writer.writeheader()
