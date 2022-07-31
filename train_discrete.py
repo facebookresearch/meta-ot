@@ -71,7 +71,6 @@ class Workspace(object):
 
 
     def run(self):
-        start_time = time.time()
         logf, writer = self._init_logging()
 
         opt = instantiate(self.cfg.optim)
@@ -111,18 +110,20 @@ class Workspace(object):
             return loss, state.apply_gradients(grads=grads)
 
         pred_error_vmap = jax.vmap(self.pred_error, in_axes=[0, 0, None])
+
         @jax.jit
         def compute_train_error(params, key):
             batch = train_sampler(key)
             err = pred_error_vmap(batch.a, batch.b, params)
             return jnp.mean(err)
 
+        start_time = time.time()
         loss_meter = utils.RunningAverageMeter()
         while self.train_iter < self.cfg.num_train_iter:
             k1, self.key = jax.random.split(self.key)
             loss, state = update(state, k1)
             loss_meter.update(loss.item())
-            if self.train_iter % 1000 == 0:
+            if self.train_iter % 100 == 0:
                 self.params = state.params
                 k1, self.key = jax.random.split(self.key)
                 train_err = compute_train_error(state.params, k1)
