@@ -2,7 +2,7 @@
 
 \documentclass{article}
 
-\usepackage[preprint]{neurips_2022}
+\usepackage{neurips_2022}
 \input{math_commands.tex}
 
 \usepackage[utf8]{inputenc}
@@ -1016,23 +1016,23 @@ If the model makes a bad prediction,
 one fallback option is to re-solve the instance from scratch.
 
 
-\subsection*{Acknowledgments}
-We would like to thank
-Eugene Vinitsky,
-Mark Tygert,
-Mathieu Blondel,
-Maximilian Nickel, and
-Muhammad Izzatullah
-for insightful comments and discussions.
-The core set of tools in Python
-\citep{van1995python,oliphant2007python}
-enabled this work, including
-Hydra \citep{Yadan2019Hydra},
-JAX \citep{jax2018github},
-Matplotlib \citep{hunter2007matplotlib},
-numpy \citep{oliphant2006guide,van2011numpy},
-Optimal Transport Tools \citep{cuturi2022optimal},
-and pandas \citep{mckinney2012python}.
+% \subsection*{Acknowledgments}
+% We would like to thank
+% Eugene Vinitsky,
+% Mark Tygert,
+% Mathieu Blondel,
+% Maximilian Nickel, and
+% Muhammad Izzatullah
+% for insightful comments and discussions.
+% The core set of tools in Python
+% \citep{van1995python,oliphant2007python}
+% enabled this work, including
+% Hydra \citep{Yadan2019Hydra},
+% JAX \citep{jax2018github},
+% Matplotlib \citep{hunter2007matplotlib},
+% numpy \citep{oliphant2006guide,van2011numpy},
+% Optimal Transport Tools \citep{cuturi2022optimal},
+% and pandas \citep{mckinney2012python}.
 
 {\small
 \bibliographystyle{plainnat}
@@ -1312,7 +1312,7 @@ on the following public domain images from
 
 \def\photos{0004,0006,0007,0009,0010,0012}
 \def\head{{\Large \hspace{.45in} $\alpha$ \hspace{1.2in} $\beta$ \hspace{1.0in} $T_\#\alpha$ \hspace{.9in} $T_\#^{-1}\beta$}}
-\begin{figure}[h]
+\begin{figure}[H]
   \vspace{-.43in}
   \head \\
   \foreach \I in \photos {\includegraphics[width=\textwidth]{fig/color/val/\I_meta_init.jpg} \\}
@@ -1321,7 +1321,7 @@ on the following public domain images from
   }
 \end{figure}
 
-\begin{figure}[h]
+\begin{figure}[H]
   \vspace{-.43in}
   \head \\
   \foreach \I in \photos {\includegraphics[width=\textwidth]{fig/color/val/\I_meta_final.jpg} \\}
@@ -1329,7 +1329,7 @@ on the following public domain images from
     The sources are given in the beginning of \cref{app:color}.}
 \end{figure}
 
-\begin{figure}[h]
+\begin{figure}[H]
   \vspace{-.43in}
   \head \\
   \foreach \I in \photos {\includegraphics[width=\textwidth]{fig/color/val/\I_vanilla_final.jpg} \\}
@@ -1337,13 +1337,14 @@ on the following public domain images from
 \end{figure}
 
 \section{Out-of-distribution generalization}
-In this experiments, we test the ability of our proposed approach to predict potentials for out-of-distribution input data. In particular, we consider the pairwise tests on 1) MNIST dataset used previously; 2) USPS dataset \citep{uspsdataset} upscaled to have the same size as the MNIST dataset; 3) Google Doodles dataset \footnote{\url{https://quickdraw.withgoogle.com/data}} with classes Crab, Cat and Faces; 4) sparsified random uniform data in [0,1] where sparsity (zeroing values below 0.95) is used to mimic the sparse signal in black-and-white images. For each pair, eg, MNIST-USPS, we train on one dataset and use the other to predict the potentials. The comparison is done using the same metric as before, ie, the deviation from the marginal constraints.  The results are presented in Figure \ref{fig:cross_domain}.
+In this experiment, we test the ability of our proposed approach to predict potentials for out-of-distribution input data. In particular, we consider the pairwise tests on 1) MNIST dataset used previously; 2) USPS dataset \citep{uspsdataset} upscaled to have the same size as the MNIST dataset; 3) Google Doodles dataset \footnote{\url{https://quickdraw.withgoogle.com/data}} with classes Crab, Cat and Faces; 4) sparsified random uniform data in [0,1] where sparsity (zeroing values below 0.95) is used to mimic the sparse signal in black-and-white images. For each pair, eg, MNIST-USPS, we train on one dataset and use the other to predict the potentials. The comparison is done using the same metric as before, ie, the deviation from the marginal constraints.  The results are presented in Figure \ref{fig:cross_domain}.
+
 \begin{figure}[!t]
     \centering
     \includegraphics[width=.32\linewidth]{fig/cross_domain/errs_doodles_mnist.pdf}
     \includegraphics[width=.32\linewidth]{fig/cross_domain/errs_doodles_usps28.pdf}
     \includegraphics[width=.32\linewidth]{fig/cross_domain/errs_doodles_random.pdf}
-    
+
     \includegraphics[width=.32\linewidth]{fig/cross_domain/errs_mnist_usps28.pdf}
     \includegraphics[width=.32\linewidth]{fig/cross_domain/errs_mnist_doodles.pdf}
     \includegraphics[width=.32\linewidth]{fig/cross_domain/errs_mnist_random.pdf}
@@ -1357,6 +1358,7 @@ In this experiments, we test the ability of our proposed approach to predict pot
     \includegraphics[width=.32\linewidth]{fig/cross_domain/errs_random_doodles.pdf}
     
     \label{fig:cross_domain}
+    \caption{Cross-domain experiments}
 \end{figure}
 
 \end{document}

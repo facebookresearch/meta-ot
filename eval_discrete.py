@@ -16,7 +16,7 @@ import jax.numpy as jnp
 import time
 
 from ott.geometry.geometry import Geometry
-from ott.core import quad_problems, linear_problems, sinkhorn
+from ott.core import quad_problems, linear_problems, sinkhorn, initializers
 from ott.tools import transport
 from ott.geometry.pointcloud import PointCloud
 
@@ -88,35 +88,56 @@ def main():
                 max_iterations = 1000
             else:
                 assert False
+
+            errs = {}
             solver = sinkhorn.make(lse_mode=True, inner_iterations=1, max_iterations=max_iterations, threshold=-1.)
             ot_prob = linear_problems.LinearProblem(geom, a=a, b=b)
             out = solver(ot_prob)
+            errs['zeros'] = out.errors
+
+            solver_gauss_init = sinkhorn.make(
+                lse_mode=True, inner_iterations=1, max_iterations=max_iterations, threshold=-1.,
+                potential_initializer=initializers.GaussianInitializer())
+            out_gauss_init = solver_gauss_init(ot_prob)
+            errs['gauss'] = out_gauss_init.errors
 
             f_pred = exp.potential_model.apply({'params': exp.params}, a, b)
             g_pred = exp.g_from_f(a, b, f_pred)
             init = (f_pred, g_pred)
             state = solver.init_state(ot_prob, init)
             out_meta = solver(ot_prob, init)
-            return out, out_meta
+            errs['meta_ot'] = out_meta.errors
 
+            return errs
 
-        fig, ax = plt.subplots(1, 1, figsize=(4,2.))
-        colors = plt.style.library['bmh']['axes.prop_cycle'].by_key()['color']
-
-        if args.timestamp:
-            fname = f'{args.exp_root}/errs_' + str(datetime.now()) + '.pdf'
-        else:
-            fname = f'{args.exp_root}/errs.pdf'
-
+        fname = f'{args.exp_root}/errs.pdf'
         print(f'Saving to {fname}')
+
+        all_errs = defaultdict(list)
         for i in range(args.num_test_samples):
             print(f'Sample {i}')
             a, b = batch.a[i], batch.b[i]
-            ot, meta_ot = compute_errs(a, b)
-            ax.plot(ot.errors, color=colors[0], alpha=0.7)
-            ax.plot(meta_ot.errors, color=colors[1], alpha=0.7)
-            # ax.set_xscale('log')
-            # ax.set_yscale('log')
+            errs = compute_errs(a, b)
+            for k,v in errs.items():
+                all_errs[k].append(v)
+
+            fig, ax = plt.subplots(1, 1, figsize=(4,2.))
+            colors = plt.style.library['bmh']['axes.prop_cycle'].by_key()['color']
+
+            def summarize_errs(errs):
+                errs = np.stack(errs)
+                mean = np.mean(errs, axis=0)
+                std = np.std(errs, axis=0)
+                return mean, std
+
+            def plot_single(errs, color):
+                mean, std = summarize_errs(errs)
+                xs = np.arange(len(mean))
+                ax.plot(xs, mean, color=color, alpha=0.7)
+                ax.fill_between(xs, mean-std, mean+std, color=color, alpha=0.3)
+
+            for key, color in zip(['zeros', 'meta_ot', 'gauss'], colors):
+                plot_single(all_errs[key], color)
 
             ax.set_ylabel('Error')
             ax.set_xlabel('Sinkhorn Iterations')
@@ -124,7 +145,7 @@ def main():
                 'mnist': 'MNIST',
                 'usps28': 'USPS28',
                 'doodles': 'Google Doodles',
-                'world': 'World',
+                'world': 'Spherical',
                 'random': 'Random'
             }
             ax.set_title(to_title[exp.cfg.data])
@@ -132,7 +153,7 @@ def main():
             fig.savefig(fname, transparent=True)
             os.system(f'pdfcrop {fname} {fname}')
 
-        plt.close(fig)
+            plt.close(fig)
 
     # Runtime profiling
     max_iterations = 100000

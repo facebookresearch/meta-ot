@@ -18,13 +18,16 @@ from flax import linen as nn
 from flax.training import train_state
 import optax
 
-from ott.core import quad_problems, problems, sinkhorn
+from ott.core import quad_problems, linear_problems, sinkhorn
 from ott.geometry import PointCloud
 
 import matplotlib.pyplot as plt
 plt.style.use('bmh')
 
 import functools
+
+from jax.config import config
+config.update("jax_enable_x64", True)
 
 from meta_ot import utils
 from meta_ot import data
@@ -69,9 +72,11 @@ class Workspace(object):
     def run(self):
         logf, writer = self._init_logging()
 
-        tx = instantiate(self.cfg.optim)
+        opt = instantiate(self.cfg.optim)
+        if self.cfg.max_grad_norm:
+            opt = optax.chain(optax.clip_by_global_norm(self.cfg.max_grad_norm), opt)
         state = train_state.TrainState.create(
-            apply_fn=self.potential_model.apply, params=self.params, tx=tx)
+            apply_fn=self.potential_model.apply, params=self.params, tx=opt)
 
         if self.cfg.data == 'mnist':
             train_sampler = data.MNISTPairSampler(train=True, batch_size=self.cfg.batch_size, debug=False)
@@ -130,7 +135,20 @@ class Workspace(object):
     def dual_obj_from_f(self, a, b, f):
         g = self.g_from_f(a, b, f)
         g = jnp.where(jnp.isfinite(g), g, 0.)
-        dual_obj = f.dot(a) + g.dot(b)
+
+        supp_a = a > 0
+        supp_b = b > 0
+        fa = supp_a * self.geom.potential_from_scaling(a)
+        div_a = jnp.sum(jnp.where(supp_a, a * (f - fa), 0.0))
+
+        gb = supp_b * self.geom.potential_from_scaling(b)
+        div_b = jnp.sum(jnp.where(supp_b, b * (g - gb), 0.0))
+
+        total_sum = jnp.sum(self.geom.marginal_from_potentials(f, g))
+        dual_obj = div_a + div_b + self.geom.epsilon * (
+            jnp.sum(a) * jnp.sum(b) - total_sum
+        )
+
         return dual_obj
 
     def dual_obj_loss(self, a, b, params):

@@ -20,6 +20,8 @@ optim:
   _target_: optax.adam
   learning_rate: 1e-3
 
+max_grad_norm: 1.
+
 hydra:
   run:
     dir: ./exp/local/${now:%Y.%m.%d}/${data}_${now:%H%M}
