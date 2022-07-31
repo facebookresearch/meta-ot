@@ -4,7 +4,7 @@
   # - hydra/launcher: submitit_slurm
 
 seed: 0
-data: world # mnist
+data: mnist
 potential_model: ${potential_model_mlp}
 batch_size: 128
 
