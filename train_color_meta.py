@@ -10,6 +10,7 @@ import csv
 import copy
 import glob
 import os
+import random
 import functools
 
 import pickle as pkl
@@ -173,6 +174,7 @@ class Workspace(object):
             X_sampler, Y_sampler = ImageSampler(X_path), ImageSampler(Y_path)
             val_samplers.append((X_sampler, Y_sampler))
 
+        random.seed(0)
         X_samplers, Y_samplers, X_squares, Y_squares, X_fulls, Y_fulls = \
             sampler.sample_image_pair_batch(
                 self.cfg.meta_batch_size, self.val_pairs)

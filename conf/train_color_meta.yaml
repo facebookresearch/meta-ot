@@ -16,10 +16,6 @@ l2_penalty: 1e-6
 max_grad_norm: 1.
 num_rgb_sample: 10000
 
-num_inner_iter: 1
-num_warmup_iter: 0
-num_inner_iter_warmup: 5
-
 num_train_iter: 2E5
 max_num_pretrain_iter: 20001
 pretrain_loss_threshold: 1e-4
