@@ -120,9 +120,9 @@
 \section{Introduction}
 Optimal transportation \citep{villani2009optimal,ambrosio2003lecture,santambrogio2015optimal,peyre2019computational,merigot2021optimal} is thriving in domains including
 economics \citep{galichon2016optimal},
-reinforcement learning \citep{dadashi2020primal,fickinger2021cross},
+reinforcement learning \citep{dadashi2021primal,fickinger2021cross},
 style transfer \citep{kolkin2019style},
-generative modeling \citep{arjovsky2017wasserstein,seguy2017large,huang2020convex,rout2021generative},
+generative modeling \citep{arjovsky2017wasserstein,seguy2018large,huang2020convex,rout2021generative},
 geometry \citep{solomon2015convolutional,cohen2021riemannian},
 domain adaptation \citep{courty2017joint,redko2019optimal},
 signal processing \citep{kolouri2017optimal},
@@ -167,10 +167,6 @@ Standard optimal transport solvers deployed in this
 setting would re-solve the optimization problems from
 scratch, but this ignores the shared structure and
 information present between different coupling problems.
-We note this is \emph{not} the out-of-sample setting
-of \citet{seguy2017large,perrot2016mapping} that
-seeks to couple measures and then extrapolate the map to
-larger measures containing the original measures.
 
 \textbf{Overview and outline.}
 We study the use of amortized optimization and machine learning
@@ -192,6 +188,19 @@ transport problems and the basic notions of amortized optimization;
 \cref{sec:meta} presents the Meta OT models and algorithms; and
 \cref{sec:experiments} empirically demonstrates the
 effectiveness of Meta OT.
+
+\textbf{Settings that are not Meta OT.}
+Meta OT is not useful in OT settings that do \emph{not} involve
+\emph{repeatedly} solving OT problems over a fixed distribution,
+including
+1) standard generative modeling settings, such
+as \citet{arjovsky2017wasserstein} that estimate the
+OT distance between the data and model distributions,
+and 2) the out-of-sample setting
+of \citet{seguy2018large,perrot2016mapping} that
+couple measures and then extrapolate the map to
+larger measures containing the original measures.
+
 
 \section{Preliminaries and background}\label{sec:preliminaries_andback}
 \subsection{Dual optimal transport solvers}
@@ -845,8 +854,8 @@ but we find it is still helpful over the zero initialization.
   \cblock{166}{6}{40} Meta OT)
   \caption{
     Meta OT successfully predicts warm-start initializations
-    that significantly improve the convergence of Sinkhorn iterations.
-    The error here is the marginal error defined in \cref{eq:sinkhorn-err}.
+    that significantly improve the convergence of Sinkhorn iterations on test data.
+    The error is the marginal error defined in \cref{eq:sinkhorn-err}.
   }
   \label{fig:discrete-errs}
 \end{figure}
@@ -963,7 +972,7 @@ efficiently, neural OT models
 \citep{korotin2019wasserstein,li2020continuous,korotin2021neural,mokrov2021large,korotin2021continuous}
 leverage ICNNs to estimate maps between continuous high-dimensional
 measures given samples from these, and
-\citet{litvinenko2021computing,scetbon2021low,forrow2019statistical,sommerfeld2019optimal,scetbon2021linear,muzellec2019subspace,bonet2021subspace}
+\citet{litvinenko2021computing,scetbon2021low,forrow2019statistical,sommerfeld2019optimal,scetbon2022linear,muzellec2019subspace,bonet2021subspace}
 leverage structural assumptions on coupling and cost matrices to reduce
 the computational and memory complexity. In the meta-OT setting, we
 consider learning to rapidly compute OT mappings between new pairs
@@ -983,7 +992,7 @@ the OT problem itself with fixed cost more efficiently across tasks.
 
 \textbf{Optimal transport and amortization.}
 Few previous works in the OT literature leverage
-amortization. \citet{courty2017learning} learn a latent space in which
+amortization. \citet{courty2018learning} learn a latent space in which
 the Wasserstein distance between the measure's embeddings is
 equivalent to the Euclidean distance. Concurrent work
 \citep{nguyen2022amortized} amortizes the estimation of the optimal
