@@ -109,13 +109,12 @@
   from past problems to rapidly predict and solve new problems.
   Otherwise, standard methods ignore the knowledge of the
   past solutions and suboptimally re-solve each problem from scratch.
-  Meta OT models surpass the standard
-  convergence rates of log-Sinkhorn solvers in the discrete setting
-  and convex potentials in the continuous setting.
-  We improve the computational time of standard OT solvers
-  by multiple orders of magnitude in discrete and continuous
-  transport settings between images, spherical data, and color palettes.
-  Our source code is available at \url{http://github.com/facebookresearch/meta-ot}.
+  We instantiate Meta OT models in discrete and continuous (Wasserstein-2)
+  settings between images, spherical data, and color palettes and
+  use them to improve the computational time of standard OT solvers
+  by multiple orders of magnitude.
+  % TODO
+  % Our source code is available at \url{http://github.com/facebookresearch/meta-ot}.
 \end{abstract}
 
 \section{Introduction}
@@ -161,6 +160,9 @@ scenarios between different input measures $(\alpha, \beta)$.
 For example, the measures could be representations of images
 we care about optimally transporting between and in deployment
 we would receive a stream of new images to couple.
+Repeatedly solving optimal transport problems also comes up in
+the context of comparing seismic signals \citep{engquist2013application}
+and in single-cell perturbations \citep{bunne2021learning,bunne2022proximal,bunne2022supervised}.
 Standard optimal transport solvers deployed in this
 setting would re-solve the optimization problems from
 scratch, but this ignores the shared structure and
@@ -461,6 +463,13 @@ the parameters using \emph{objective-based learning} with
 \end{equation}
 which does \emph{not} require ground-truth solutions $z^\star$
 and can be optimized with a gradient-based solver.
+While we focus on optimizing \cref{eq:amor-obj-opt} because we do not
+assume easy access to ground-truth solutions $z^\star(\phi)$,
+one alternative is \emph{regression-based learning} if the solutions are easily available:
+\begin{equation}
+  \min_\theta \E_{\phi\sim \gP(\phi)} \|z^\star(\phi)-\hat z_\theta(\phi)\|_2^2.
+  \label{eq:amor-obj-reg}
+\end{equation}
 
 \section{Meta Optimal Transport}
 \label{sec:meta}
@@ -576,15 +585,15 @@ entropic OT solvers such as
 \citet{thibault2017overrelaxed,altschuler2017near,alaya2019screening,lin2019acceleration}
 that would otherwise solve every problem from scratch.
 
-
-\textbf{Convergence rates.}
-The knowledge of the hyper-distribution $\gD$ of problems
-being solved enables Meta OT methods to surpass the
-convergence rates and computational time of standard algorithms
-by restricting the set of problems rather than considering
-the average- or worst-case performance.
-The model $\hat f_\theta$ distills information between the
-problem instances into the parameters $\theta$.
+% TODO: Better rephrase somewhere?
+% \textbf{Convergence rates.}
+% The knowledge of the hyper-distribution $\gD$ of problems
+% being solved enables Meta OT methods to surpass the
+% convergence rates and computational time of standard algorithms
+% by restricting the set of problems rather than considering
+% the average- or worst-case performance.
+% The model $\hat f_\theta$ distills information between the
+% problem instances into the parameters $\theta$.
 
 \subsection{Meta OT between continuous measures (Wasserstein-2)}
 \label{sec:meta-ot:icnn}
@@ -735,14 +744,16 @@ solutions $\varphi^\star$ and we learn it with Adam.
     \begin{table}[H]
       \vspace{-6mm}
       \centering
-      \caption{Discrete OT runtime (in seconds) to reach a marginal error of $10^{-3}$
-      and Meta OT's runtime.}
+      \caption{Sinkhorn runtime (seconds) to reach a marginal error
+        of $10^{-3}$.
+        Meta OT's initial prediction takes $\approx 5\cdot10^{-5}$ seconds.
+      }
       \resizebox{\linewidth}{!}{
-      \begin{tabular}{lccc} \toprule
-        & MNIST & Spherical \\\midrule
-        Sinkhorn & \pair{3.3\cdot10^{-3}}{1.0\cdot10^{-3}} & \pair{1.5}{0.64} \\
-        Meta OT + Sinkhorn & \cellhi\pair{2.2\cdot10^{-3}}{3.8\cdot10^{-4}} & \cellhi \pair{0.48}{.24} \\ \midrule
-        Meta OT (Initial prediction) & \pair{4.6\cdot10^{-5}}{2.8\cdot10^{-6}} & \pair{4.4\cdot10^{-5}}{3.2\cdot10^{-6}} \\
+      \begin{tabular}{r|cc} \toprule
+        Initialization & MNIST & Spherical \\\midrule
+        Zeros & \pair{7.7\cdot10^{-3}}{1.2\cdot10^{-3}} & \pair{1.4}{1.9\cdot10^{-1}} \\
+        Gaussian & \pair{7.7\cdot10^{-3}}{1.4\cdot10^{-3}} & \pair{1.1}{2.0\cdot10^{-1}} \\
+        Meta OT & \cellhi \pair{3.9\cdot10^{-3}}{1.6\cdot10^{-3}} & \cellhi \pair{0.44}{1.5\cdot10^{-1}} \\
         \bottomrule
       \end{tabular}}
       \label{tab:discrete-runtime}
@@ -755,7 +766,7 @@ solutions $\varphi^\star$ and we learn it with Adam.
       \centering
       \caption{Color transfer runtimes and values.}
       \resizebox{\linewidth}{!}{
-        \begin{tabular}{rlll} \toprule
+        \begin{tabular}{r|lll} \toprule
           & Iter & Runtime (s) & Dual Value \\\midrule
 Meta OT & None & \pair{3.5\cdot10^{-3}}{2.7\cdot10^{-4}} & \pair{0.90}{6.08\cdot10^{-2}} \\
 + W2GN & 1k & \pair{0.93}{2.27\cdot10^{-2}} & \pair{1.0}{2.57\cdot10^{-3}} \\
@@ -767,7 +778,7 @@ W2GN & 1k & \pair{0.90}{1.62\cdot10^{-2}} & \pair{0.96}{2.62\cdot10^{-2}} \\
       \label{tab:color-runtimes}
     \end{table}
   \end{minipage}
-  {\footnotesize We report the mean and {\color{gray}(standard deviation)} across 10 test instances.}\vspace{-3mm}
+  {\footnotesize We report the mean {\color{gray}and standard deviation} across 10 test instances.}\vspace{-3mm}
 \end{figure}
 
 \section{Experiments}\label{sec:experiments}
@@ -777,12 +788,12 @@ solving multiple OT problems naturally arises.
 We implemented our code in JAX \citep{jax2018github} as an
 extension to the the Optimal Transport Tools (OTT)
 package \citep{cuturi2022optimal}.
-All experiments take roughly $\approx$2 hours to
-run on our single Quadro GP100 GPU.
 \Cref{app:exp-details} covers further experimental
-and implementation details.
-The source code to reproduce all of our experiments is available at
-\url{http://github.com/facebookresearch/meta-ot}.
+and implementation details, and shows that all of our
+experiments take a few hours to
+run on our single Quadro GP100 GPU.
+% The source code to reproduce all of our experiments is available at
+% \url{http://github.com/facebookresearch/meta-ot}.
 
 \subsection{Discrete OT between MNIST digits}
 \label{sec:exp:mnist}
@@ -815,18 +826,27 @@ We then fine-tune Meta OT's prediction with Sinkhorn as in
 can be quickly refined in fewer iterations than running
 Sinkhorn with the default initialization,
 and \cref{tab:discrete-runtime} shows the runtime required
-to reach the default threshold.
+to reach the default threshold, which uses the default marginal error threshold of $10^{-3}$.
+We compare our learned initialization to the standard zero initialization,
+as well as the Gaussian initialization proposed in \citet{thornton2022rethinking},
+which takes a continuous Gaussian approximation of the measures and initializes
+the potentials to be the known coupling between the Gaussians.
+This Gaussian initialization assumes the squared Euclidean cost,
+which is not the case in our spherical transport problem,
+but we find it is still helpful over the zero initialization.
 
 \begin{figure}[t]
   \centering
   \includegraphics[width=0.49\textwidth]{fig/mnist-errs.pdf}
   \hfill
-  \includegraphics[width=0.49\textwidth]{fig/world-errs.pdf}
-  \cblock{52}{138}{189} Sinkhorn \hspace{2mm}
-  \cblock{166}{6}{40} Meta OT + Sinkhorn
-  \caption{Sinkhorn convergence on test instances.
+  \includegraphics[width=0.49\textwidth]{fig/world-errs.pdf} \\[2mm]
+  Initialization (\cblock{52}{138}{189} Zeros \hspace{2mm}
+  \cblock{122}{104}{166} Gaussian \citep{thornton2022rethinking} \hspace{2mm}
+  \cblock{166}{6}{40} Meta OT)
+  \caption{
     Meta OT successfully predicts warm-start initializations
     that significantly improve the convergence of Sinkhorn iterations.
+    The error here is the marginal error defined in \cref{eq:sinkhorn-err}.
   }
   \label{fig:discrete-errs}
 \end{figure}
@@ -857,7 +877,6 @@ to reach the default threshold.
   \label{fig:world-errs}
 \end{figure}
 
-\newpage
 \subsection{Discrete OT for supply-demand transportation on spherical data}
 \label{sec:exp:world}
 
@@ -913,7 +932,7 @@ show improved convergence and runtime.
   \centering
   \vspace{-5mm}
   \includegraphics[width=0.5\textwidth]{fig/color/val-objs.pdf} \\
-  \cblock{52}{138}{189} W2GN \hspace{2mm} \cblock{166}{6}{40} Meta OT + W2GN
+  Initialization (\cblock{52}{138}{189} Standard \hspace{2mm} \cblock{166}{6}{40} Meta OT)
   \caption{Convergence on color transfer test instances using W2GN.
     Meta ICNNs predicts warm-start initializations
     that significantly improve the (normalized) dual objective values.
@@ -990,17 +1009,24 @@ We instantiated it to speed up entropic regularized optimal
 transport and unregularized optimal transport with squared
 cost by multiple orders of magnitude.
 We envision extensions of the work in:
-1) \textbf{Meta OT models}.
+\begin{enumerate}
+\item \textbf{Meta OT models}.
 While we mostly consider models based on hypernetworks,
-other meta-learning paradigms can be connected in,
-and
-2) \textbf{OT algorithms}. While we instantiated
+other meta-learning paradigms can be connected in.
+In the discrete setting, we only considered settings where
+the cost remains fixed, but the Meta OT model can also be conditioned
+on the cost by considering the entire cost matrix as an input
+(which may be too large for most models to handle), or considering
+a lower-dimensional parameterization of the cost that changes between
+the Meta OT problem instances.
+\item \textbf{OT algorithms}. While we instantiated
 models on top of log-Sinkhorn and W2GN, Meta OT
-could be integrated with most other methods too.
-3) \textbf{OT applications} that are computationally
+could be built on top of other methods.
+\item \textbf{OT applications} that are computationally
 expensive and repeatedly solved, \eg in multi-marginal
 and barycentric settings, or for Gromov-Wasserstein
 distances between metric-measure spaces.
+\end{enumerate}
 
 \textbf{Limitations.}
 While we have illustrated successful applications of Meta OT,
@@ -1040,7 +1066,8 @@ one fallback option is to re-solve the instance from scratch.
 \bibliography{refs}
 }
 
-\iffalse
+% \iffalse
+\newpage
 \section*{Checklist}
 \begin{enumerate}
 \item For all authors...
@@ -1117,7 +1144,7 @@ curating/releasing new assets...
 }
 
 \end{enumerate}
-\fi
+% \fi
 
 \newpage
 \appendix
@@ -1182,9 +1209,10 @@ LEO \citep{rusu2018meta} and CAVIA \citep{zintgraf2019fast},
 which propose to learn a latent space for the parameters
 where the initialization is also conditional on the input.
 
-\subsection{Neural process}
+\subsection{Neural process and conditional Monge maps}
 The (conditional) neural process models considered in \citet{garnelo2018neural,garnelo2018conditional}
-can also be adapted for the Meta OT setting.
+can also be adapted for the Meta OT setting, and is similar to the
+model proposed in \citet{bunne2022supervised}.
 In the continuous setting, this would result in a
 dual potential that is also conditioned on a representation
 of the input measures, \eg $\psi_\varphi(x; z)$ where
@@ -1201,10 +1229,10 @@ also be conditioned on the context extracted from the measures.
 \textbf{Challenges for Meta OT.}
 This raises the issue on best-formulating the model to be conditional
 on the context. One way could be to append $z$ to the input
-point $x$ in the domain, but if $\psi$ is an input-convex neural network,
-then the model would only need to be convex with respect to $x$
-and not $z$.
-\looseness=-1
+point $x$ in the domain.
+\citet{bunne2022supervised} proposes to use the Partially Input-Convex
+Neural Network (PICNN) from \citep{amos2017input} to make the model
+convex with respect to $x$ and not $z$.
 
 \textbf{Advantages for Meta OT.}
 A large advantage is that the representation $z$ of the measures
@@ -1214,7 +1242,7 @@ parameters $\varphi$ that our Meta OT models are predicting.
 \section{Additional experimental and implementation details}
 \label{app:exp-details}
 
-\iffalse
+% \iffalse
 We have attached the Jax source code necessary to run and reproduce all
 of the experiments in our paper and will open-source all of it.
 Here is a basic overview of the files:
@@ -1248,28 +1276,33 @@ download the dataset:
 ./eval_discrete.py <exp_dir> # Evaluate the learned models
 ./plot_mnist.py <exp_dir> # Produce further visualizations
 \end{lstlisting}
-\fi
+% \fi
 
 \subsection{Hyper-parameters}
 We briefly summarize the hyper-parameters we used for training,
 which we did not extensively tune.
 In the discrete setting, we use the same hyper-parameters for the
 MNIST and spherical settings.
-\begin{table}[h]
+
+\begin{minipage}{0.5\textwidth}
+\begin{table}[H]
   \caption{Discrete OT hyper-parameters.}
   \centering
+  \resizebox{\linewidth}{!}{
   \begin{tabular}{rl}\toprule
     Name & Value \\\midrule
     Batch size & 128 \\
     Number of training iterations & 50000 \\
     MLP Hidden Sizes & [1024, 1024, 1024] \\
     Adam learning rate & 1e-3 \\\bottomrule
-  \end{tabular}
+  \end{tabular}}
 \end{table}
-
-\begin{table}[h]
+\end{minipage}
+\begin{minipage}{0.5\textwidth}
+\begin{table}[H]
   \caption{Continuous OT hyper-parameters.}
   \centering
+  \resizebox{\linewidth}{!}{
   \begin{tabular}{rl}\toprule
     Name & Value \\\midrule
     Meta batch size (for $\alpha,\beta$) & 8 \\
@@ -1284,8 +1317,157 @@ MNIST and spherical settings.
     Meta ICNN Encoder & ResNet18 \\
     Encoder output size (both measures) & 256$\times$2 \\
     Meta ICNN Decoder Hidden Sizes & [512] \\\bottomrule
-  \end{tabular}
+  \end{tabular}}
 \end{table}
+\end{minipage}
+
+\subsection{Sinkhorn convergence times, varying thresholds}
+In the main paper, \cref{tab:discrete-runtime} reports the runtime of Sinkhorn
+to reach a convergence threshold of the marginal error being below a tolerance
+of $10^{-3}$, which is the default value used in many solvers.
+\cref{tab:all-sinkhorn-runtimes-mnist,tab:all-sinkhorn-runtimes-sphere}
+report the results from sweeping over other thresholds and show that
+Meta OT's initialization is consistently able to help.
+
+\begin{table}[h]
+\label{tab:all-sinkhorn-runtimes-mnist}
+\caption{Sinkhorn runtime to reach a thresholded marginal error on MNIST.}
+\newcommand{\pair}[2]{$#1$ {\color{gray}\footnotesize $\pm#2$}}
+\resizebox{\linewidth}{!}{
+\begin{tabular}{r|cccc}
+Initialization & Threshold=$10^{-2}$ & Threshold=$10^{-3}$ & Threshold=$10^{-4}$ & Threshold=$10^{-5}$ \\ \midrule
+Zeros & \pair{4.5\cdot10^{-3}}{1.5\cdot10^{-3}} & \pair{7.7\cdot10^{-3}}{1.2\cdot10^{-3}} & \pair{1.1\cdot10^{-2}}{1.8\cdot10^{-3}} & \pair{1.5\cdot10^{-2}}{2.3\cdot10^{-3}} \\
+Gaussian & \pair{4.1\cdot10^{-3}}{1.2\cdot10^{-3}} & \pair{7.7\cdot10^{-3}}{1.4\cdot10^{-3}} & \pair{1.1\cdot10^{-2}}{1.7\cdot10^{-3}} & \pair{1.4\cdot10^{-2}}{2.4\cdot10^{-3}} \\
+Meta OT & \cellhi \pair{2.3\cdot10^{-3}}{9.2\cdot10^{-6}} & \cellhi \pair{3.9\cdot10^{-3}}{1.6\cdot10^{-3}} & \cellhi \pair{6.7\cdot10^{-3}}{1.4\cdot10^{-3}} & \cellhi \pair{1.0\cdot10^{-2}}{2.4\cdot10^{-3}} \\ \bottomrule
+\end{tabular}
+}
+\end{table}
+
+\begin{table}[h]
+\label{tab:all-sinkhorn-runtimes-sphere}
+\caption{Sinkhorn runtime to reach a thresholded marginal error on the spherical transport problem.}
+\newcommand{\pair}[2]{$#1$ {\color{gray}\footnotesize $\pm#2$}}
+\resizebox{\linewidth}{!}{
+\begin{tabular}{r|cccc}\toprule
+Initialization & Threshold=$10^{-2}$ & Threshold=$10^{-3}$ & Threshold=$10^{-4}$ & Threshold=$10^{-5}$ \\ \midrule
+Zeros & \pair{8.8\cdot10^{-1}}{1.3\cdot10^{-1}} & \pair{1.4}{1.9\cdot10^{-1}} & \pair{2.1}{3.6\cdot10^{-1}} & \pair{2.8}{5.6\cdot10^{-1}} \\
+Gaussian & \pair{5.6\cdot10^{-1}}{9.9\cdot10^{-2}} & \pair{1.1}{2.0\cdot10^{-1}} & \pair{1.7}{3.5\cdot10^{-1}} & \pair{2.4}{5.4\cdot10^{-1}} \\
+Meta OT & \cellhi \pair{7.8\cdot10^{-2}}{3.4\cdot10^{-2}} & \cellhi \pair{0.44}{1.5\cdot10^{-1}} & \cellhi \pair{0.97}{3.2\cdot10^{-1}} & \cellhi \pair{1.7}{6.8\cdot10^{-1}} \\ \bottomrule
+\end{tabular}
+}
+\end{table}
+
+\newpage
+\subsection{Experimental runtimes and convergence}
+\label{app:runtimes}
+\Cref{fig:training_info} shows the convergence during training of
+Meta OT models in the discrete and continuous settings over 10 trials
+on our single Quadro GP100 GPU.
+The MNIST models are consistently trained to optimality within 2 minutes (!)
+while the continuous model takes a few hours to train.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=.49\linewidth]{fig/mnist-training-iter.pdf}
+    \includegraphics[width=.49\linewidth]{fig/mnist-training-time.pdf} \\[6mm]
+    \includegraphics[width=.49\linewidth]{fig/world-training-iter.pdf}
+    \includegraphics[width=.49\linewidth]{fig/world-training-time.pdf} \\[6mm]
+    \includegraphics[width=.49\linewidth]{fig/color-training-iter.pdf}
+    \includegraphics[width=.49\linewidth]{fig/color-training-time.pdf}
+    \label{fig:training_info}
+    \caption{Convergence of Meta OT models during training, reported over
+      iterations and wall-clock time. We run each experiment for 10 trials
+      with different seeds and report each trial as a line.}
+\end{figure}
+
+
+\newpage
+\section{Out-of-distribution generalization}
+\Cref{fig:cross_domain} tests the ability of Meta OT to
+predict potentials for out-of-distribution input data.
+We consider the pairwise training and evaluation on the following datasets:
+1) MNIST; 2) USPS \citep{uspsdataset} (upscaled to have the same size as the MNIST);
+3) Google Doodles dataset\footnote{\url{https://quickdraw.withgoogle.com/data}}
+with classes Crab, Cat and Faces;
+4) sparsified random uniform data in [0,1] where
+sparsity (zeroing values below 0.95) is used to mimic the sparse
+signal in black-and-white images.
+For each pair, eg, MNIST-USPS, we train on one dataset and use the other
+to predict the potentials.
+The comparison is done using the same metric as before, \ie,
+the deviation from the marginal constraints
+defined in \cref{eq:sinkhorn-err}.
+
+\begin{figure}[h]
+    \centering
+    \hspace*{-3.1cm}
+    \begin{tikzpicture}[node/.style={inner sep=0,outer sep=0}]
+      % MNIST ->
+      \node (14) {\includegraphics[width=.39\linewidth]{fig/cross_domain_gauss_init/errs_mnist_random.pdf}};
+      \draw[draw=white,fill=white] ($(14.south west)+(1.2mm,4mm)$) rectangle ++(0.5cm,.9in);
+      \node[left=-11mm of 14] (13) {\includegraphics[width=.39\linewidth]{fig/cross_domain_gauss_init/errs_mnist_usps28.pdf}};
+      \draw[draw=white,fill=white] ($(13.south west)+(1.2mm,4mm)$) rectangle ++(0.5cm,.9in);
+      \node[left=-11mm of 13] (12) {\includegraphics[width=.39\linewidth]{fig/cross_domain_gauss_init/errs_mnist_doodles.pdf}};
+      \draw[draw=white,fill=white] ($(12.south west)+(1.2mm,4mm)$) rectangle ++(0.5cm,.9in);
+      \node[left=-11mm of 12] (11) {\includegraphics[width=.39\linewidth]{fig/cross_domain_gauss_init/errs_mnist_mnist.pdf}};
+      \draw[draw=white,fill=white] ($(11.south west)+(7mm,.5mm)$) rectangle ++(7.3in,5mm);
+
+      % Doodles ->
+      \node[below=-6mm of 14] (24) {\includegraphics[width=.39\linewidth]{fig/cross_domain_gauss_init/errs_doodles_random.pdf}};
+      \draw[draw=white,fill=white] ($(24.south west)+(1.2mm,4mm)$) rectangle ++(0.5cm,.9in);
+      \node[left=-11mm of 24] (23) {\includegraphics[width=.39\linewidth]{fig/cross_domain_gauss_init/errs_doodles_usps28.pdf}};
+      \draw[draw=white,fill=white] ($(23.south west)+(1.2mm,4mm)$) rectangle ++(0.5cm,.9in);
+      \node[left=-11mm of 23] (22) {\includegraphics[width=.39\linewidth]{fig/cross_domain_gauss_init/errs_doodles_doodles.pdf}};
+      \draw[draw=white,fill=white] ($(22.south west)+(1.2mm,4mm)$) rectangle ++(0.5cm,.9in);
+      \node[left=-11mm of 22] (21) {\includegraphics[width=.39\linewidth]{fig/cross_domain_gauss_init/errs_doodles_mnist.pdf}};
+      \draw[draw=white,fill=white] ($(21.south west)+(7mm,.5mm)$) rectangle ++(7.3in,5mm);
+
+      % USPS ->
+      \node[below=-6mm of 24] (34) {\includegraphics[width=.39\linewidth]{fig/cross_domain_gauss_init/errs_usps28_random.pdf}};
+      \draw[draw=white,fill=white] ($(34.south west)+(1.2mm,4mm)$) rectangle ++(0.5cm,.9in);
+      \node[left=-11mm of 34] (33) {\includegraphics[width=.39\linewidth]{fig/cross_domain_gauss_init/errs_usps28_usps28.pdf}};
+      \draw[draw=white,fill=white] ($(33.south west)+(1.2mm,4mm)$) rectangle ++(0.5cm,.9in);
+      \node[left=-11mm of 33] (32) {\includegraphics[width=.39\linewidth]{fig/cross_domain_gauss_init/errs_usps28_doodles.pdf}};
+      \draw[draw=white,fill=white] ($(32.south west)+(1.2mm,4mm)$) rectangle ++(0.5cm,.9in);
+      \node[left=-11mm of 32] (31) {\includegraphics[width=.39\linewidth]{fig/cross_domain_gauss_init/errs_usps28_mnist.pdf}};
+      \draw[draw=white,fill=white] ($(31.south west)+(7mm,.5mm)$) rectangle ++(7.3in,5mm);
+
+      % Random ->
+      \node[below=-6mm of 34] (44) {\includegraphics[width=.39\linewidth]{fig/cross_domain_gauss_init/errs_random_random.pdf}};
+      \draw[draw=white,fill=white] ($(44.south west)+(1.2mm,4mm)$) rectangle ++(0.5cm,.9in);
+      \node[left=-11mm of 44] (43) {\includegraphics[width=.39\linewidth]{fig/cross_domain_gauss_init/errs_random_usps28.pdf}};
+      \draw[draw=white,fill=white] ($(43.south west)+(1.2mm,4mm)$) rectangle ++(0.5cm,.9in);
+      \node[left=-11mm of 43] (42) {\includegraphics[width=.39\linewidth]{fig/cross_domain_gauss_init/errs_random_doodles.pdf}};
+      \draw[draw=white,fill=white] ($(42.south west)+(1.2mm,4mm)$) rectangle ++(0.5cm,.9in);
+      \node[left=-11mm of 42] (41) {\includegraphics[width=.39\linewidth]{fig/cross_domain_gauss_init/errs_random_mnist.pdf}};
+      \node [draw=white, below left=-4mm and -4.3cm of 41] () {\footnotesize Sinkhorn Iterations};
+      \node [draw=white, below left=-4mm and -4.3cm of 42] () {\footnotesize Sinkhorn Iterations};
+      \node [draw=white, below left=-4mm and -4.3cm of 43] () {\footnotesize Sinkhorn Iterations};
+      \node [draw=white, below left=-4mm and -4.3cm of 44] () {\footnotesize Sinkhorn Iterations};
+
+      \node [draw=white, rotate=90, below left=-23mm and 3mm of 11] (mnist_label) {MNIST};
+      \node [draw=white, rotate=90, below left=-23mm and 3mm of 21] (doodles_label) {Doodles};
+      \node [draw=white, rotate=90, below left=-23mm and 3mm of 31] () {USPS};
+      \node [draw=white, rotate=90, below left=-23mm and 3mm of 41] () {Uniform};
+      \node [draw, rotate=90, below left=-7mm and 13mm of doodles_label] {Training Domain};
+
+      \node [draw=white, above right=-3mm and -3.3cm of 11] () {MNIST};
+      \node [draw=white, above right=-3mm and -3.3cm of 12] (doodles_label_eval) {Doodles};
+      \node [draw=white, above right=-3mm and -3.3cm of 13] () {USPS};
+      \node [draw=white, above right=-3mm and -3.3cm of 14] () {Uniform};
+      \node [draw, above right=2mm and 2mm of doodles_label_eval] {Evaluation Domain};
+
+      \draw[draw=black,fill=none,line width=1mm] ($(11.south west)+(7.5mm,5.3mm)$) rectangle ++(45mm,21mm);
+      \draw[draw=black,fill=none,line width=1mm] ($(22.south west)+(7.5mm,5.3mm)$) rectangle ++(45mm,21mm);
+      \draw[draw=black,fill=none,line width=1mm] ($(33.south west)+(7.5mm,5.3mm)$) rectangle ++(45mm,21mm);
+      \draw[draw=black,fill=none,line width=1mm] ($(44.south west)+(7.5mm,5.8mm)$) rectangle ++(45mm,20mm);
+    \end{tikzpicture} \\[2mm]
+    Initialization (\cblock{52}{138}{189} Zeros \hspace{2mm}
+    \cblock{122}{104}{166} Gaussian \citep{thornton2022rethinking}  \hspace{2mm}
+    \cblock{166}{6}{40} Meta OT)
+    \label{fig:cross_domain}
+    \caption{Cross-domain experiments.}
+\end{figure}
 
 \newpage
 \section{Additional color transfer results}
@@ -1337,59 +1519,5 @@ on the following public domain images from
   \caption{W2GN (final). The sources are given in the beginning of \cref{app:color}.}
 \end{figure}
 
-\section{Out-of-distribution generalization}
-In this experiment, we test the ability of our proposed approach to predict potentials for out-of-distribution input data. In particular, we consider the pairwise tests on 1) MNIST dataset used previously; 2) USPS dataset \citep{uspsdataset} upscaled to have the same size as the MNIST dataset; 3) Google Doodles dataset \footnote{\url{https://quickdraw.withgoogle.com/data}} with classes Crab, Cat and Faces; 4) sparsified random uniform data in [0,1] where sparsity (zeroing values below 0.95) is used to mimic the sparse signal in black-and-white images. For each pair, eg, MNIST-USPS, we train on one dataset and use the other to predict the potentials. The comparison is done using the same metric as before, ie, the deviation from the marginal constraints.  The results are presented in Figure \ref{fig:cross_domain}.
-
-% \begin{figure}[!t]
-%     \centering
-%     \includegraphics[width=.32\linewidth]{fig/cross_domain/errs_doodles_mnist.pdf}
-%     \includegraphics[width=.32\linewidth]{fig/cross_domain/errs_doodles_usps28.pdf}
-%     \includegraphics[width=.32\linewidth]{fig/cross_domain/errs_doodles_random.pdf}
-
-%     \includegraphics[width=.32\linewidth]{fig/cross_domain/errs_mnist_usps28.pdf}
-%     \includegraphics[width=.32\linewidth]{fig/cross_domain/errs_mnist_doodles.pdf}
-%     \includegraphics[width=.32\linewidth]{fig/cross_domain/errs_mnist_random.pdf}
-
-%     \includegraphics[width=.32\linewidth]{fig/cross_domain/errs_usps28_mnist.pdf}
-%     \includegraphics[width=.32\linewidth]{fig/cross_domain/errs_usps28_doodles.pdf}
-%     \includegraphics[width=.32\linewidth]{fig/cross_domain/errs_usps28_random.pdf}
-
-%     \includegraphics[width=.32\linewidth]{fig/cross_domain/errs_random_mnist.pdf}
-%     \includegraphics[width=.32\linewidth]{fig/cross_domain/errs_random_usps28.pdf}
-%     \includegraphics[width=.32\linewidth]{fig/cross_domain/errs_random_doodles.pdf}
-
-%     \label{fig:cross_domain}
-%     \caption{Cross-domain experiments}
-% \end{figure}
-
-\begin{figure}[!t]
-    \centering
-    \hspace*{-1cm}
-    \includegraphics[width=.25\linewidth]{fig/cross_domain_gauss_init/errs_doodles_doodles.pdf}
-    \includegraphics[width=.25\linewidth]{fig/cross_domain_gauss_init/errs_doodles_mnist.pdf}
-    \includegraphics[width=.25\linewidth]{fig/cross_domain_gauss_init/errs_doodles_usps28.pdf}
-    \includegraphics[width=.25\linewidth]{fig/cross_domain_gauss_init/errs_doodles_random.pdf}
-
-    \hspace*{-1cm}
-    \includegraphics[width=.25\textwidth]{fig/mnist-errs.pdf}
-    \includegraphics[width=.25\linewidth]{fig/cross_domain_gauss_init/errs_mnist_usps28.pdf}
-    \includegraphics[width=.25\linewidth]{fig/cross_domain_gauss_init/errs_mnist_doodles.pdf}
-    \includegraphics[width=.25\linewidth]{fig/cross_domain_gauss_init/errs_mnist_random.pdf}
-
-    \hspace*{-1cm}
-    \includegraphics[width=.25\linewidth]{fig/cross_domain_gauss_init/errs_usps28_usps28.pdf}
-    \includegraphics[width=.25\linewidth]{fig/cross_domain_gauss_init/errs_usps28_mnist.pdf}
-    \includegraphics[width=.25\linewidth]{fig/cross_domain_gauss_init/errs_usps28_doodles.pdf}
-    \includegraphics[width=.25\linewidth]{fig/cross_domain_gauss_init/errs_usps28_random.pdf}
-
-    \hspace*{-1cm}
-    \includegraphics[width=.25\linewidth]{fig/cross_domain_gauss_init/errs_random_random.pdf}
-    \includegraphics[width=.25\linewidth]{fig/cross_domain_gauss_init/errs_random_mnist.pdf}
-    \includegraphics[width=.25\linewidth]{fig/cross_domain_gauss_init/errs_random_usps28.pdf}
-    \includegraphics[width=.25\linewidth]{fig/cross_domain_gauss_init/errs_random_doodles.pdf}
-
-    \label{fig:cross_domain}
-    \caption{Cross-domain experiments}
-\end{figure}
 
 \end{document}
