@@ -5,10 +5,12 @@ import argparse
 
 import shutil
 import os
+import re
 import pickle as pkl
 from collections import defaultdict
 
 import numpy as np
+import functools
 
 import jax
 import jax.numpy as jnp
@@ -161,16 +163,26 @@ def main():
 
     # Runtime profiling
     max_iterations = 100000
-    threshold = 1e-3
     inner_iterations = 10
-    solver = sinkhorn.make(
-        lse_mode=True, inner_iterations=inner_iterations,
-        max_iterations=max_iterations, threshold=threshold)
 
     @jax.jit
-    def run_standard(a, b):
+    def run_standard(threshold, a, b):
+        solver = sinkhorn.make(
+            lse_mode=True, inner_iterations=inner_iterations,
+            max_iterations=max_iterations, threshold=threshold)
         ot_prob = linear_problems.LinearProblem(geom, a=a, b=b)
         out = solver(ot_prob)
+        return out.converged
+
+    @jax.jit
+    def run_gauss_init(threshold, a, b):
+        solver_gauss_init = sinkhorn.make(
+            lse_mode=True, inner_iterations=inner_iterations,
+            max_iterations=max_iterations,
+            threshold=threshold,
+            potential_initializer=initializers.GaussianInitializer())
+        ot_prob = linear_problems.LinearProblem(geom, a=a, b=b)
+        out = solver_gauss_init(ot_prob)
         return out.converged
 
     @jax.jit
@@ -179,7 +191,10 @@ def main():
         return True
 
     @jax.jit
-    def run_meta(a, b):
+    def run_meta(threshold, a, b):
+        solver = sinkhorn.make(
+            lse_mode=True, inner_iterations=inner_iterations,
+            max_iterations=max_iterations, threshold=threshold)
         f_pred = exp.potential_model.apply({'params': exp.params}, a, b)
         g_pred = exp.g_from_f(a, b, f_pred)
         init = (f_pred, g_pred)
@@ -189,24 +204,42 @@ def main():
         return out_meta.converged
 
 
-    def profile(f, tag):
+    def profile(f):
         # Warm-up the solvers
         f(batch.a[0], batch.b[0])
 
         times = []
         for i in range(args.num_test_samples):
-            print(f'Sample {i}')
+            # print(f'Sample {i}')
             a, b = batch.a[i], batch.b[i]
             start = time.time()
             converged = f(a, b)
             times.append(time.time() - start)
             assert converged
 
-        print(f'{tag}: {np.mean(times):.1e} +/- {np.std(times):.1e}')
+        result = fr'\pair{{{np.mean(times):.1e}}}{{{np.std(times):.1e}}}'
+        result = re.sub('e(-[0-9]*)', r'\\cdot10^{\1}', result)
+        result = result.replace('-0', '-')
+        return result
 
-    profile(run_standard, 'standard')
-    profile(run_meta_pred, 'meta_init_pred')
-    profile(run_meta, 'meta')
+    print('init pred:')
+    print(profile(run_meta_pred))
+
+    thresholds = [1e-2, 1e-3, 1e-4, 1e-5]
+    prof_results = defaultdict(list)
+    solver_funcs = {
+        'standard': run_standard,
+        'gauss_init': run_gauss_init,
+        'meta': run_meta
+    }
+    for threshold in thresholds:
+        for k in ['standard', 'gauss_init', 'meta']:
+            f = functools.partial(solver_funcs[k], threshold)
+            prof_results[k].append(profile(f))
+
+    print(' & '.join([f'{v:.2e}' for v in thresholds]))
+    for k in ['standard', 'gauss_init', 'meta']:
+        print(k + ' & ' + ' & '.join(prof_results[k]))
 
 
 if __name__ == '__main__':
