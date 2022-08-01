@@ -118,7 +118,7 @@ class Workspace:
         log = pd.read_csv(f'{self.args.exp_root}/log.csv')
         fig, ax = plt.subplots(1, 1, figsize=(4,2.5))
         colors = plt.style.library['bmh']['axes.prop_cycle'].by_key()['color']
-        ax.plot(log['iter'], log['val_dual_obj'])
+        ax.plot(log['iter'], log['dual_obj'])
         fname = f'{self.exp.work_dir}/train-objs.pdf'
         print(f'Saving to {fname}')
         ax.set_xlabel('Train iteration')
