@@ -15,6 +15,11 @@ paper.
 
 ![](https://user-images.githubusercontent.com/707462/173271876-61b18081-ffbb-4603-ab43-06c79e80616b.gif)
 
+-----
+
+Yijiang Pang has posted an unofficial PyTorch re-implementation
+in the discrete setting
+[here](https://github.com/pangyijiang/Implementation-of-Meta-OT-between-discrete-measures).
 
 # Setup
 After cloning this repository and installing PyTorch
