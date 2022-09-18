@@ -5,8 +5,8 @@
 
 seed: 0
 
-image_1: data/paintings/601f.png
-image_2: data/paintings/b486.png
+image_1: data/paintings/market-in-algiers.jpg
+image_2: data/paintings/argenteuil-the-seine.jpg
 
 batch_size: 1024
 cycle_loss_weight: 3.
