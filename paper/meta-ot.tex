@@ -2,7 +2,8 @@
 
 \documentclass{article}
 
-\usepackage[preprint]{neurips_2022}
+\usepackage[table,svgnames]{xcolor}
+\usepackage{iclr2023_conference,times}
 \input{math_commands.tex}
 
 \usepackage[utf8]{inputenc}
@@ -27,7 +28,6 @@
   breaklines=true
 }
 
-\usepackage[table,svgnames]{xcolor}
 \definecolor{linkcolor}{RGB}{74, 102, 146}
 \newcommand{\cellhi}{\cellcolor{RoyalBlue!15}}
 \usepackage[colorlinks=true,allcolors=linkcolor,pageanchor=true,plainpages=false,pdfpagelabels,bookmarks,bookmarksnumbered]{hyperref}
@@ -113,7 +113,6 @@
   settings between images, spherical data, and color palettes and
   use them to improve the computational time of standard OT solvers
   by multiple orders of magnitude.
-  % TODO
   % Our source code is available at \url{http://github.com/facebookresearch/meta-ot}.
 \end{abstract}
 
@@ -347,7 +346,7 @@ that we will make use of:
 \end{equation}
 
 
-\subsubsection{Wasserstein-2 OT between continuous (Euclidean) measures with dual potentials}
+\subsubsection{Dual Wasserstein-2 OT between continuous (Euclidean) measures}
 \label{sec:prelim:continuous}
 \begin{wrapfigure}{R}{0.48\textwidth}
   \vspace{-10mm}
@@ -754,15 +753,16 @@ solutions $\varphi^\star$ and we learn it with Adam.
       \vspace{-6mm}
       \centering
       \caption{Sinkhorn runtime (seconds) to reach a marginal error
-        of $10^{-3}$.
+        of $10^{-2}$.
         Meta OT's initial prediction takes $\approx 5\cdot10^{-5}$ seconds.
       }
       \resizebox{\linewidth}{!}{
       \begin{tabular}{r|cc} \toprule
         Initialization & MNIST & Spherical \\\midrule
-        Zeros & \pair{7.7\cdot10^{-3}}{1.2\cdot10^{-3}} & \pair{1.4}{1.9\cdot10^{-1}} \\
-        Gaussian & \pair{7.7\cdot10^{-3}}{1.4\cdot10^{-3}} & \pair{1.1}{2.0\cdot10^{-1}} \\
-        Meta OT & \cellhi \pair{3.9\cdot10^{-3}}{1.6\cdot10^{-3}} & \cellhi \pair{0.44}{1.5\cdot10^{-1}} \\
+        Zeros ($t_{\rm zeros}$) & \pair{4.5\cdot10^{-3}}{1.5\cdot10^{-3}} & \pair{0.88}{0.13} \\
+        Gaussian & \pair{4.1\cdot10^{-3}}{1.2\cdot10^{-3}} & \pair{0.56}{9.9\cdot10^{-2}} \\
+        Meta OT ($t_{\rm Meta}$) & \cellhi \pair{2.3\cdot10^{-3}}{9.2\cdot10^{-6}} & \cellhi \pair{7.8\cdot10^{-2}}{3.4\cdot10^{-2}} \\ \midrule
+        Improvement ($t_{\rm zeros}/t_{\rm Meta}$) & 1.96 & 11.3 \\
         \bottomrule
       \end{tabular}}
       \label{tab:discrete-runtime}
@@ -801,8 +801,55 @@ package \citep{cuturi2022optimal}.
 and implementation details, and shows that all of our
 experiments take a few hours to
 run on our single Quadro GP100 GPU.
+We will open source the code to reproduce all of our experiments.
 % The source code to reproduce all of our experiments is available at
 % \url{http://github.com/facebookresearch/meta-ot}.
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=0.49\textwidth]{fig/mnist-errs.pdf}
+  \hfill
+  \includegraphics[width=0.49\textwidth]{fig/world-errs.pdf} \\[2mm]
+  Initialization (\cblock{52}{138}{189} Zeros \hspace{2mm}
+  \cblock{122}{104}{166} Gaussian \citep{thornton2022rethinking} \hspace{2mm}
+  \cblock{166}{6}{40} Meta OT)
+  \caption{
+    Meta OT successfully predicts warm-start initializations
+    that significantly improve the convergence of Sinkhorn iterations on test data.
+    The error is the marginal error defined in \cref{eq:sinkhorn-err}.
+  }
+  \label{fig:discrete-errs}
+\end{figure}
+
+
+\begin{figure}[t]
+  \centering
+  \vspace{-4mm}
+  \begin{minipage}{0.45\linewidth}
+    \centering
+    {\large Sinkhorn \color{gray}{(converged, ground-truth)}} \\
+    \includegraphics[width=\textwidth]{{fig/world/truth.0}.png} \\[-5mm]
+    \includegraphics[width=\textwidth]{{fig/world/truth.1}.png} \\[-5mm]
+  \end{minipage}
+  \hfill
+  \begin{minipage}{0.45\linewidth}
+    \centering
+    {\large Meta OT \color{gray}{(initial prediction)}} \\
+    \includegraphics[width=\textwidth]{{fig/world/meta.0}.png} \\[-5mm]
+    \includegraphics[width=\textwidth]{{fig/world/meta.1}.png} \\[-5mm]
+  \end{minipage}
+  \caption{Test set coupling predictions of the spherical transport problem.
+    Meta OT's initial prediction is $\bf{\approx}37500$ times faster
+    than solving Sinkhorn to optimality.
+    Supply locations are shown as black dots and the blue lines
+    show the spherical transport maps $T$ going to demand locations
+    at the end.
+    The sphere is visualized with the Mercator projection.
+  }
+  \vspace{-7mm}
+  \label{fig:world-errs}
+\end{figure}
+
 
 \subsection{Discrete OT between MNIST digits}
 \label{sec:exp:mnist}
@@ -835,7 +882,9 @@ We then fine-tune Meta OT's prediction with Sinkhorn as in
 can be quickly refined in fewer iterations than running
 Sinkhorn with the default initialization,
 and \cref{tab:discrete-runtime} shows the runtime required
-to reach the default threshold, which uses the default marginal error threshold of $10^{-3}$.
+to reach an error threshold of $10^{-2}$, showing that the Meta OT
+initialization can solve the problems an order of magnitude
+faster than the zero initialization.
 We compare our learned initialization to the standard zero initialization,
 as well as the Gaussian initialization proposed in \citet{thornton2022rethinking},
 which takes a continuous Gaussian approximation of the measures and initializes
@@ -843,48 +892,6 @@ the potentials to be the known coupling between the Gaussians.
 This Gaussian initialization assumes the squared Euclidean cost,
 which is not the case in our spherical transport problem,
 but we find it is still helpful over the zero initialization.
-
-\begin{figure}[t]
-  \centering
-  \includegraphics[width=0.49\textwidth]{fig/mnist-errs.pdf}
-  \hfill
-  \includegraphics[width=0.49\textwidth]{fig/world-errs.pdf} \\[2mm]
-  Initialization (\cblock{52}{138}{189} Zeros \hspace{2mm}
-  \cblock{122}{104}{166} Gaussian \citep{thornton2022rethinking} \hspace{2mm}
-  \cblock{166}{6}{40} Meta OT)
-  \caption{
-    Meta OT successfully predicts warm-start initializations
-    that significantly improve the convergence of Sinkhorn iterations on test data.
-    The error is the marginal error defined in \cref{eq:sinkhorn-err}.
-  }
-  \label{fig:discrete-errs}
-\end{figure}
-
-\begin{figure}[t]
-  \centering
-  \begin{minipage}{0.45\linewidth}
-    \centering
-    {\large Sinkhorn \color{gray}{(converged, ground-truth)}} \\
-    \includegraphics[width=\textwidth]{{fig/world/truth.0}.png} \\[-5mm]
-    \includegraphics[width=\textwidth]{{fig/world/truth.1}.png} \\[-5mm]
-  \end{minipage}
-  \hfill
-  \begin{minipage}{0.45\linewidth}
-    \centering
-    {\large Meta OT \color{gray}{(initial prediction)}} \\
-    \includegraphics[width=\textwidth]{{fig/world/meta.0}.png} \\[-5mm]
-    \includegraphics[width=\textwidth]{{fig/world/meta.1}.png} \\[-5mm]
-  \end{minipage}
-  \caption{Test set coupling predictions of the spherical transport problem.
-    Meta OT's initial prediction is $\bf{\approx}37500$ times faster
-    than solving Sinkhorn to optimality.
-    Supply locations are shown as black dots and the blue lines
-    show the spherical transport maps $T$ going to demand locations
-    at the end.
-    The sphere is visualized with the Mercator projection.
-  }
-  \label{fig:world-errs}
-\end{figure}
 
 \subsection{Discrete OT for supply-demand transportation on spherical data}
 \label{sec:exp:world}
@@ -1051,7 +1058,7 @@ meta-distribution $\gD$ over the measures and cost.
 If the model makes a bad prediction,
 one fallback option is to re-solve the instance from scratch.
 
-
+\iffalse
 \subsection*{Acknowledgments}
 We would like to thank
 Eugene Vinitsky,
@@ -1069,93 +1076,13 @@ Matplotlib \citep{hunter2007matplotlib},
 numpy \citep{oliphant2006guide,van2011numpy},
 Optimal Transport Tools \citep{cuturi2022optimal},
 and pandas \citep{mckinney2012python}.
+\fi
 
 {\small
 \bibliographystyle{plainnat}
 \bibliography{refs}
 }
 
-\iffalse
-\newpage
-\section*{Checklist}
-\begin{enumerate}
-\item For all authors...
-\begin{enumerate}
-  \item Do the main claims made in the abstract and introduction accurately reflect the paper's contributions and scope?
-    \answerYes{We hope so}
-  \item Did you describe the limitations of your work?
-    \answerYes{In \cref{sec:con}}
-  \item Did you discuss any potential negative societal impacts of your work?
-    \answerNo{We do not immediately foresee any that our work would add
-      that the broader optimal transport field doesn't already have}
-  \item Have you read the ethics review guidelines and ensured that your paper conforms to them?
-    \answerYes{}
-\end{enumerate}
-
-
-\textcolor{gray}{
-\item If you are including theoretical results...
-\textcolor{black}{(This is not a theory paper)}
-\begin{enumerate}
-  \item Did you state the full set of assumptions of all theoretical results?
-    \answerNA{}
-  \item Did you include complete proofs of all theoretical results?
-    \answerNA{}
-\end{enumerate}
-}
-
-
-\item If you ran experiments...
-\begin{enumerate}
-  \item Did you include the code, data, and instructions needed to
-    reproduce the main experimental results (either in the supplemental
-    material or as a URL)?
-    \answerYes{}
-  \item Did you specify all the training details (e.g., data splits,
-    hyperparameters, how they were chosen)?
-    \answerYes{}
-  \item Did you report error bars (e.g., with respect to the random seed after running experiments multiple times)?
-    \answerYes{We show results from multiple trials in most places}
-  \item Did you include the total amount of compute and the type of
-    resources used (e.g., type of GPUs, internal cluster, or cloud provider)?
-    \answerYes{}
-\end{enumerate}
-
-\item If you are using existing assets (e.g., code, data, models) or
-curating/releasing new assets...
-\begin{enumerate}
-  \item If your work uses existing assets, did you cite the creators?
-    \answerYes{}
-  \item Did you mention the license of the assets?
-    \answerYes{}
-  \item Did you include new assets either in the supplemental material or as a URL?
-    \answerNo{}
-  \item Did you discuss whether and how consent was obtained from people whose data you're using/curating?
-    \answerNA{}
-  \item Did you discuss whether the data you are using/curating
-    contains personally identifiable information or offensive content?
-    \answerNA{}
-\end{enumerate}
-
-\textcolor{gray}{
-\item If you used crowdsourcing or conducted research with human subjects...
-\begin{enumerate}
-  \item Did you include the full text of instructions given to
-    participants and screenshots, if applicable?
-    \answerNA{}
-  \item Did you describe any potential participant risks, with links
-    to Institutional Review Board (IRB) approvals, if applicable?
-    \answerNA{}
-  \item Did you include the estimated hourly wage paid to participants
-    and the total amount spent on participant compensation?
-    \answerNA{}
-\end{enumerate}
-}
-
-\end{enumerate}
-\fi
-
-\newpage
 \appendix
 \section{Selecting $\epsilon$ for MNIST}
 \label{app:mnist-eps}
