@@ -883,8 +883,7 @@ can be quickly refined in fewer iterations than running
 Sinkhorn with the default initialization,
 and \cref{tab:discrete-runtime} shows the runtime required
 to reach an error threshold of $10^{-2}$, showing that the Meta OT
-initialization can solve the problems an order of magnitude
-faster than the zero initialization.
+initialization help solve the problems faster by an order of magnitude.
 We compare our learned initialization to the standard zero initialization,
 as well as the Gaussian initialization proposed in \citet{thornton2022rethinking},
 which takes a continuous Gaussian approximation of the measures and initializes
@@ -976,7 +975,7 @@ to the standard W2GN learning.
 \textbf{Efficiently estimating OT maps.}
 To compute OT maps with fixed cost between pairs of measures
 efficiently, neural OT models
-\citep{korotin2019wasserstein,li2020continuous,korotin2021neural,mokrov2021large,korotin2021continuous}
+\citep{korotin2019wasserstein,korotin2021neural,mokrov2021large,korotin2021continuous}
 leverage ICNNs to estimate maps between continuous high-dimensional
 measures given samples from these, and
 \citet{litvinenko2021computing,scetbon2021low,forrow2019statistical,sommerfeld2019optimal,scetbon2022linear,muzellec2019subspace,bonet2021subspace}
@@ -1077,6 +1076,14 @@ numpy \citep{oliphant2006guide,van2011numpy},
 Optimal Transport Tools \citep{cuturi2022optimal},
 and pandas \citep{mckinney2012python}.
 \fi
+
+\subsection*{Reproducibility statement}
+We have tried to clearly articulate all of the relevant details in
+the text so that this paper can be completely reproduced from
+the contents of this paper alone.
+We will also open-source the full source code behind
+every experimental result, table, and figure in this paper,
+and will anonymously send it with this submission.
 
 {\small
 \bibliographystyle{plainnat}
@@ -1260,7 +1267,7 @@ MNIST and spherical settings.
 \subsection{Sinkhorn convergence times, varying thresholds}
 In the main paper, \cref{tab:discrete-runtime} reports the runtime of Sinkhorn
 to reach a convergence threshold of the marginal error being below a tolerance
-of $10^{-3}$, which is the default value used in many solvers.
+of $10^{23}$.
 \Cref{tab:all-sinkhorn-runtimes-mnist,tab:all-sinkhorn-runtimes-sphere}
 report the results from sweeping over other thresholds and show that
 Meta OT's initialization is consistently able to help.
