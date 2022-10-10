@@ -48,15 +48,10 @@ class MNISTPairSampler:
         data = data/data.sum(axis=1, keepdims=True)
         self.data = data
 
-        """
         x_grid = []
         for i in jnp.linspace(1, 0, num=28):
             for j in jnp.linspace(0, 1, num=28):
                 x_grid.append([j, i])
-        """
-
-        x_grid = jnp.linspace(0, 1, num=784).reshape(784, 1)
-
         x_grid = jnp.array(x_grid)
         self.geom = PointCloud(x=x_grid, y=x_grid, epsilon=self.epsilon) #, online=True)
 
@@ -258,12 +253,10 @@ class USPSPairSampler:
         data = data / data.sum(axis=1, keepdims=True)
         self.data = data
 
-        #x_grid = []
-        #for i in jnp.linspace(1, 0, num=28):
-        #    for j in jnp.linspace(0, 1, num=28):
-        #        x_grid.append([j, i])
-
-        x_grid = jnp.linspace(0, 1, num=dim).reshape(dim, 1)
+        x_grid = []
+        for i in jnp.linspace(1, 0, num=28):
+           for j in jnp.linspace(0, 1, num=28):
+               x_grid.append([j, i])
         x_grid = jnp.array(x_grid)
         self.geom = PointCloud(x=x_grid, y=x_grid, epsilon=self.epsilon) #, online=True)
 
@@ -317,12 +310,10 @@ class DoodlePairSampler:
         data = data / data.sum(axis=1, keepdims=True)
         self.data = data
 
-        # x_grid = []
-        # for i in jnp.linspace(1, 0, num=28):
-        #    for j in jnp.linspace(0, 1, num=28):
-        #        x_grid.append([j, i])
-
-        x_grid = jnp.linspace(0, 1, num=dim).reshape(dim, 1)
+        x_grid = []
+        for i in jnp.linspace(1, 0, num=28):
+           for j in jnp.linspace(0, 1, num=28):
+               x_grid.append([j, i])
         x_grid = jnp.array(x_grid)
         self.geom = PointCloud(x=x_grid, y=x_grid, epsilon=self.epsilon) #, online=True)
 
@@ -360,29 +351,33 @@ class RandomSampler:
     def __post_init__(self):
 
         x = jnp.linspace(0, 1, num=self.dim)
-        x_grid = jnp.array(x.reshape(self.dim, 1))
+
+        x_grid = []
+        for i in jnp.linspace(1, 0, num=28):
+           for j in jnp.linspace(0, 1, num=28):
+               x_grid.append([j, i])
+        x_grid = jnp.array(x_grid)
         self.geom = PointCloud(x=x_grid, y=x_grid, epsilon=self.epsilon) #, online=True)
 
         @jax.jit
         def _sample(key):
+            # if self.type == 'gauss':
 
-            if self.type == 'gauss':
+            #     k1, k2, k3, k4, key = jax.random.split(key, num=5)
 
-                k1, k2, k3, k4, key = jax.random.split(key, num=5)
+            #     mean_1 = jax.random.uniform(k1, minval=.3, maxval=.7, shape=(self.batch_size,))
+            #     std_1 = jax.random.uniform(k2, minval=.1, maxval=.3, shape=(self.batch_size,))
 
-                mean_1 = jax.random.uniform(k1, minval=.3, maxval=.7, shape=(self.batch_size,))
-                std_1 = jax.random.uniform(k2, minval=.1, maxval=.3, shape=(self.batch_size,))
+            #     a = jnp.asarray([jnp.exp(-(x - mean) ** 2 / (2 * std ** 2)) for mean, std in zip(mean_1, std_1)])
+            #     a = a / a.sum(axis=1, keepdims=1)
 
-                a = jnp.asarray([jnp.exp(-(x - mean) ** 2 / (2 * std ** 2)) for mean, std in zip(mean_1, std_1)])
-                a = a / a.sum(axis=1, keepdims=1)
+            #     mean_2 = jax.random.uniform(k3, minval=.3, maxval=.7, shape=(self.batch_size,))
+            #     std_2 = jax.random.uniform(k4, minval=.1, maxval=.3, shape=(self.batch_size,))
 
-                mean_2 = jax.random.uniform(k3, minval=.3, maxval=.7, shape=(self.batch_size,))
-                std_2 = jax.random.uniform(k4, minval=.1, maxval=.3, shape=(self.batch_size,))
+            #     b = jnp.asarray([jnp.exp(-(x - mean) ** 2 / (2 * std ** 2)) for mean, std in zip(mean_2, std_2)])
+            #     b = b / b.sum(axis=1, keepdims=1)
 
-                b = jnp.asarray([jnp.exp(-(x - mean) ** 2 / (2 * std ** 2)) for mean, std in zip(mean_2, std_2)])
-                b = b / b.sum(axis=1, keepdims=1)
-
-            elif self.type == 'uniform':
+            if self.type == 'uniform':
 
                 k1, k2, key = jax.random.split(key, num=3)
 
