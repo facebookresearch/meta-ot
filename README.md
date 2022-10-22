@@ -34,7 +34,7 @@ set up the code with:
 python3 setup.py develop
 ```
 
-# Basic structure of this i[nrepository
+# Basic structure of this repository
 
 + [./conf](./conf): Hydra configuration
 + [./meta_ot](./meta_ot): Meta OT models and other utility code used by the experiments
