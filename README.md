@@ -13,7 +13,9 @@ experiments for our
 [Meta Optimal Transport](https://arxiv.org/abs/2206.05262)
 paper.
 
-![](https://user-images.githubusercontent.com/707462/173271876-61b18081-ffbb-4603-ab43-06c79e80616b.gif)
+![t-mnist-loop](https://user-images.githubusercontent.com/707462/200144352-18b9ee3a-00e7-4306-bec3-ea8ae89f7ca9.gif)
+![t-sphere-loop](https://user-images.githubusercontent.com/707462/200144374-ba403ab2-cfdd-45b4-8956-f07f28d6c3d7.gif)
+![color](https://github.com/facebookresearch/meta-ot/assets/707462/995dfe43-967e-4f48-a5c3-ed417e984293)
 
 -----
 
